@@ -28,18 +28,17 @@ Try
     #This function resets the network adapter, clears the DNS cache and releases/renews IP configuration
     function Reset-NetworkAdapter
     {
-        # Resets the network adapter
-        Reset-NetAdapter -Name "Wi*"
-        Start-Sleep -Seconds 5
-        Write-Host "Network adapter has been reset" -ForegroundColor Green
         Restart-NetAdapter -Name "Wi*"
         Write-Host "Network adapter restarted" -ForegroundColor Green
         # Clears Dns Cache
         Clear-DnsClientCache
+        Start-Sleep -Seconds 5
         ipconfig /flushdns
         Write-Host "Flushed DNS" -ForegroundColor Green
         # Release and Renew the ip configuration
+        Start-Sleep -Seconds 5
         ipconfig /Release
+        Start-Sleep -Seconds 5
         ipconfig /Renew
         Write-Host "IP configuration renew & released!" -ForegroundColor Green
     }
