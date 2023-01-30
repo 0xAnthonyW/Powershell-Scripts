@@ -41,6 +41,12 @@ Try
         Start-Sleep -Seconds 5
         ipconfig /Renew
         Write-Host "IP configuration renew & released!" -ForegroundColor Green
+        netsh winsock reset
+        Start-Sleep -Seconds 5
+        netcfg -d
+        Write-Host "Network adapter has been Reset" -ForegroundColor Green
+        Start-Sleep -Seconds 4
+        Restart-Computer -force
     }
     #Gets the student account
     $user = (Get-LocalUser | Where-Object { $_.Name -like "STU*" }).Name
@@ -102,4 +108,3 @@ Catch
     Write-Host $Error[0].Exception
 }
 PAUSE
-
