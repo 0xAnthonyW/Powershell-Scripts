@@ -13,7 +13,7 @@ $updates = 'D:\Updates'
 $updatesDestination = 'C:\Users\admin\Desktop\Updates'
 $Drivers = 'C:\Users\admin\Desktop\Updates\Scripts\830Drivers.bat'
 $MSU = 'D:\Updates\Scripts\MSU.ps1'
-$WindowsBlocker = 'C:\Users\admin\Desktop\Software\Updated-By-Anthony\WindowsBlocker-V1-2.ps1'
+$WindowsBlocker = 'C:\Users\admin\Desktop\Software\Updated-By-Anthony\Windows-Blocker-V1-2.ps1'
 if (Test-Path $softwareDestination) 
 {
     Remove-Item -Path $softwareDestination -Force -Recurse
