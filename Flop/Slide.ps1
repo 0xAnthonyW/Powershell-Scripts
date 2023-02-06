@@ -1,6 +1,6 @@
 #dont run as admin
 #basically to replace test.ps1
-#todo maybe work on recycle bin again...
+#todo get application current version maybe guid check?
 $TaskPass = 'C:\Users\admin\Desktop\TaskPasswordExpire.ps1'
 $flipme = 'C:\Users\admin\Desktop\Software\FlipMe.ps1'
 $UsbPath = 'D:\PassExpire'
@@ -46,6 +46,9 @@ Remove-Item -Path $PassExpirePath -Recurse
 Start-Process Powershell -Wait "-ExecutionPolicy Bypass -File $TaskPass"
 Write-Host "Password Expire is done" -ForegroundColor Green
 Start-Sleep -Seconds 20
+#Clear RecycleBin
+Start-Process -FilePath "C:\Windows\System32\cmd.exe" -verb runas -ArgumentList {/c rd /s /q c:\$Recycle.bin}
+Write-host "Recyclebin Cleared" -ForegroundColor Green
 ##Flip Me
 Start-Process Powershell -Wait "-ExecutionPolicy Bypass -File $flipme"
 Write-Host "Flipping is done" -ForegroundColor Green
