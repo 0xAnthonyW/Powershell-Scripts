@@ -13,7 +13,10 @@ $updates = 'D:\Updates'
 $updatesDestination = 'C:\Users\admin\Desktop\Updates'
 $Drivers = 'C:\Users\admin\Desktop\Updates\Scripts\830Drivers.bat'
 $MSU = 'D:\Updates\Scripts\MSU.ps1'
-$WindowsBlocker = 'C:\Users\admin\Desktop\Software\Updated-By-Anthony\Windows-Blocker-V1-2.ps1'
+$WindowsBlocker = 'C:\Users\admin\Desktop\Software\Updated-By-Anthony\WindowsBlocker-V1-2.ps1'
+# UserAccount
+Start-Process Powershell -Wait "-ExecutionPolicy Bypass -File $usrAccount"
+Start-Sleep -Seconds 10
 if (Test-Path $softwareDestination) 
 {
     Remove-Item -Path $softwareDestination -Force -Recurse
@@ -39,9 +42,6 @@ else
 }
 # Sets timezone
 Set-TimeZone -Name 'Central Standard Time' -PassThru
-# UserAccount
-Start-Process Powershell -Wait "-ExecutionPolicy Bypass -File $usrAccount"
-Start-Sleep -Seconds 30
 # Drivers
 Start-Process -FilePath "$Drivers"-Wait -NoNewWindow
 # Start-Sleep -Seconds 20
@@ -60,13 +60,13 @@ else
     Copy-Item -Path $UsbPath -Recurse -Destination $Destination
     (Get-ChildItem $Destination -Recurse).FullName
 }
-Start-Sleep -Seconds 10
+Start-Sleep -Seconds 5
 Move-Item -Path 'C:\Users\admin\Desktop\PassExpire\PasswordExpire.ps1' -Destination $Destination 
 Move-Item -Path 'C:\Users\admin\Desktop\PassExpire\TaskPasswordExpire.ps1' -Destination $Destination 
 Remove-Item -Path $PassExpirePath -Recurse
 ##TaskPasswordExpire
 Start-Process Powershell -Wait "-ExecutionPolicy Bypass -File $TaskPass"
-Start-Sleep -Seconds 20
+Start-Sleep -Seconds 10
 ##Flip Me
 Start-Process Powershell -Wait "-ExecutionPolicy Bypass -File $flipme"
 Write-Host "Flipping is done" -ForegroundColor Green
