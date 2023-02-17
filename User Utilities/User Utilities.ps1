@@ -1,5 +1,5 @@
 <# Created By Anthony
-User Utilities v1.1.2#>
+User Utilities v1.1.3#>
 #This script is used to reset the password, time zone and network adapter for a user. It assumes the user has been granted the required permissions to execute the functions.
 #Run PowerShell as Admin.
 if (!([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator"))
@@ -48,6 +48,18 @@ Try
         Start-Sleep -Seconds 4
         Restart-Computer -force
     }
+    function Add-User
+    {
+        #Get-CimInstance -Class Win32_UserProfile | Where-Object { $_.LocalPath.split('\')[-1] -like 'STU*' } | Remove-CimInstance
+        $in = Read-host "Enter Student Account Name"
+        #$Password = Read-Host -AsSecureString
+        $StuPassword = "Student" | ConvertTo-SecureString -AsPlainText -Force
+        New-LocalUser -Name "$in" -Description "$in" -Password $StuPassword -Verbose
+        Add-LocalGroupMember -Group "Users" -Member "$in"
+        Set-LocalUser -Name "$in"
+        net user $in /logonpasswordchg:yes
+        PAUSE
+    }
     #Gets the student account
     $user = (Get-LocalUser | Where-Object { $_.Name -like "STU*" }).Name
     #The options menu provides the user with a choice of functions. Depending on the option chosen, the appropriate function is run.
@@ -60,6 +72,7 @@ Try
 2) Password Never Expires
 3) Real Time Clock Fix
 4) Wifi Reset
+5) Create User
 "
             switch ($userinput)
             {
@@ -82,6 +95,11 @@ Try
                 '4'
                 {
                     Reset-NetworkAdapter
+                    PAUSE
+                }
+                '5'
+                {
+                    Add-User
                     PAUSE
                 }
                 default
