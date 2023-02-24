@@ -1,22 +1,24 @@
 <# Created By Anthony
-User Utilities v1.1.3#>
+User Utilities v1.1.4#>
 #This script is used to reset the password, time zone and network adapter for a user. It assumes the user has been granted the required permissions to execute the functions.
+
 #Run PowerShell as Admin.
 if (!([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator"))
 {
     Start-Process powershell.exe "-NoProfile -ExecutionPolicy Bypass -File `"$PSCommandPath`"" -Verb RunAs; exit
 }
+
 Try
 {
     #This function resets the password of the user to 'Student' and sets it to require a change at next login.
     function Reset-UserPassword
     {
-        Param([string]$user)
+        Param([string]$Student)
         # Sets the Password Never Expires to false to ensure logonpasswordchg can be set
-        Set-LocalUser -Name $user -PasswordNeverExpires $False
+        Set-LocalUser -Name $Student -PasswordNeverExpires $False
         # Resets the password of the user to 'Student'
-        net user $user "Student" /logonpasswordchg:yes
-        Write-Host "Password for user $user has been reset to 'Student' and set to user must change password at next login" -ForegroundColor Green
+        net user $Student "Student" /logonpasswordchg:yes
+        Write-Host "Password for user $Student has been reset to 'Student' and set to user must change password at next login" -ForegroundColor Green
     }
     #This function sets the Real Time Clock to 'Central Standard Time'
     function Reset-Timezone
@@ -60,8 +62,43 @@ Try
         net user $in /logonpasswordchg:yes
         PAUSE
     }
+    function Remove-User
+    {
+        # List all local users and prompt the user to select a user to delete
+        $users = Get-LocalUser | Select-Object Name | Sort-Object Name
+        Write-Host "The following local users are found on this computer:"
+        $i = 1
+        foreach ($user in $users) 
+        {
+            Write-Host "$i) $($user.Name)"
+            $i++
+        }
+        
+        $userToDelete = Read-Host "Enter the number of the user you wish to delete"
+        
+        if ([int]$userToDelete -ge 1 -and [int]$userToDelete -le $users.Count) 
+        {
+            $user = $users[[int]$userToDelete - 1]
+            $user = $user.Name
+            Write-Host "You have selected user '$user' to delete"
+            $confirm = Read-Host "Are you sure you want to delete user '$user'? (Y/N)"
+            if ($confirm -eq "Y") 
+            {
+                Remove-LocalUser -Name $user -Confirm:$false
+                Write-Host "User '$user' has been deleted"
+            }
+            else 
+            {
+                Write-Host "User '$user' has not been deleted"
+            }
+        }
+        else {
+            Write-Host "Invalid input. Please enter a number between 1 and $($users.Count)"
+        }
+        
+    }
     #Gets the student account
-    $user = (Get-LocalUser | Where-Object { $_.Name -like "STU*" }).Name
+    $Student = (Get-LocalUser | Where-Object { $_.Name -like "STU*" }).Name
     #The options menu provides the user with a choice of functions. Depending on the option chosen, the appropriate function is run.
     Try
     {
@@ -73,17 +110,18 @@ Try
 3) Real Time Clock Fix
 4) Wifi Reset
 5) Create User
+6) Delete User
 "
             switch ($userinput)
             {
                 '1'
                 {
-                    Reset-UserPassword $user
+                    Reset-UserPassword $Student
                     PAUSE #Exit
                 }
                 '2'
                 {
-                    Set-LocalUser -Name $user -PasswordNeverExpires $True
+                    Set-LocalUser -Name $Student -PasswordNeverExpires $True
                     Write-Host "Password has been set to not expire" -ForegroundColor Green
                     PAUSE
                 }
@@ -100,6 +138,11 @@ Try
                 '5'
                 {
                     Add-User
+                    PAUSE
+                }
+                '6'
+                {
+                    Remove-User
                     PAUSE
                 }
                 default

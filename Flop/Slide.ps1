@@ -1,9 +1,5 @@
-#V0.2.1
-#dont run as admin
-#basically to replace test.ps1
-#todo get application current version maybe guid check?
-#Sets brightness to 100%
-(Get-WmiObject -Namespace root/WMI -Class WmiMonitorBrightnessMethods).WmiSetBrightness(1, 100)
+#V0.2.2
+#todo add more detection for virus detection
 #Sets ExecutionPolicy
 if (!([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator"))
 {
@@ -29,14 +25,16 @@ powercfg -change -standby-timeout-ac 0
 powercfg -change -monitor-timeout-dc 0
 powercfg -change -standby-timeout-dc 0
 
+#Sets brightness to 100%
+(Get-WmiObject -Namespace root/WMI -Class WmiMonitorBrightnessMethods).WmiSetBrightness(1, 100)
+
 if ($tasks)
 {
     Write-Host "The following tasks were found with the name '$taskName':" -ForegroundColor Yellow
     $tasks | ForEach-Object 
     {
         Write-Host $_.TaskName
-        # Enable User Account Control (UAC) consent prompt.
-        Set-ItemProperty -Path REGISTRY::HKEY_LOCAL_MACHINE\Software\Microsoft\Windows\CurrentVersion\Policies\System -Name ConsentPromptBehaviorAdmin -Value 5
+
         # Check if the SWUpdater.exe file exists in the user's profile folder. If it does, prompt for admin interaction.
         if (Test-Path $exePath)
         {
@@ -53,6 +51,7 @@ if ($tasks)
 else
 {
     Write-Host "No tasks were found with the name '$taskName'." -ForegroundColor Green
+    
     # Check if the SWUpdater.exe file exists in the user's profile folder. If it does, prompt for admin interaction.
     if (Test-Path $exePath)
     {
@@ -86,31 +85,40 @@ else
             Copy-Item -Path $software -Recurse -Destination $Destination -Force
             Write-host "Software has been copied to $Destination " -ForegroundColor Green
         }
+        
         # Set the system's timezone to Central Standard Time.
         Set-TimeZone -Name 'Central Standard Time' -PassThru
         Write-Host "Timezone has been set to CST" -ForegroundColor Green
+        
         # Move the PasswordExpire and TaskPasswordExpire scripts to the destination folder.
         Start-Sleep -Seconds 4
+        
         # Move the PasswordExpire and TaskPasswordExpire scripts to the destination folder.
         Copy-Item -Path 'C:\Users\admin\Desktop\PassExpire\PasswordExpire.ps1' -Destination $Destination -Force
         Copy-Item -Path 'C:\Users\admin\Desktop\PassExpire\TaskPasswordExpire.ps1' -Destination $Destination -Force
         Remove-Item -Path $PassExpirePath -Recurse -Force
-        #main
+
         # Run the TaskPasswordExpire script.
         Start-Process Powershell -Wait "-ExecutionPolicy Bypass -File $TaskPass"
         Write-Host "Password Expire is done" -ForegroundColor Green
         Start-Sleep -Seconds 5
+        
         # Empty the Recycle Bin.
         Start-Process -FilePath "C:\Windows\System32\cmd.exe" -verb runas -ArgumentList { /c rd /s /q c:\$Recycle.bin }
         Write-host "Recyclebin Cleared" -ForegroundColor Green
+        
         # Run the FlipMe script.
         Start-Process Powershell -Wait "-ExecutionPolicy Bypass -File $flipme"
         Write-Host "Flipping is done" -ForegroundColor Green
+        
         # Set the "Turn off display after" and "Sleep after" settings to 10 minutes for the "Plugged in" power plan, and 5 minutes for the "On battery" power plan.
         powercfg -change -monitor-timeout-ac 10
         powercfg -change -standby-timeout-ac 10
         powercfg -change -monitor-timeout-dc 5
         powercfg -change -standby-timeout-dc 5
+
+        #Sets brightness to 100%
+        (Get-WmiObject -Namespace root/WMI -Class WmiMonitorBrightnessMethods).WmiSetBrightness(1, 100)
         Read-Host "All done press enter to exit"
         ## not done more to be done almost fully automated
     }
