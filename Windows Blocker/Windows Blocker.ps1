@@ -1,8 +1,9 @@
-#Ver 1-2
-<# Created By Anthony Make sure to check https://learn.microsoft.com/en-us/windows/release-health/release-information or https://learn.microsoft.com/en-us/lifecycle/products/windows-10-home-and-pro
+<# Created By Anthony Walters Make sure to check https://learn.microsoft.com/en-us/windows/release-health/release-information or https://learn.microsoft.com/en-us/lifecycle/products/windows-10-home-and-pro
 for the Windows Version End Of Service Date #>
+#todo need to find a way to get the Product Version Automatically mainly for windows 11 compatbility.
 #Run PowerShell as Admin.
-if (!([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")) {
+if (!([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")) 
+{
     Start-Process powershell.exe "-NoProfile -ExecutionPolicy Bypass -File `"$PSCommandPath`"" -Verb RunAs; exit
 }
 
@@ -19,20 +20,23 @@ New-Item -Path "HKLM:\SYSTEM\Setup" -Name UpgradeNotification -Force
 New-Item -Path "HKLM:\SOFTWARE\Microsoft" -Name PCHC -Force
 
 #Opens Winver so you can note down the Windows Version Number then it will close after 5 seconds
-Start-Process Winver
-Start-Sleep -Seconds 5
-Stop-Process -Name Winver
+# Start-Process Winver
+# Start-Sleep -Seconds 5
+# Stop-Process -Name Winver
 
 # Prompt the user for the desired value of the TargetReleaseVersionInfo key
-$targetReleaseVersionInfo = Read-Host "Enter the desired TargetReleaseVersionInfo (Example: *22H2* *23H1* *23H2*)"
+#$targetReleaseVersionInfo = Read-Host "Enter the desired TargetReleaseVersionInfo (Example: *22H2* *23H1* *23H2*)"
 
 # Prompt the user for the desired value of the TargetReleaseVersionInfo key
 $productVersion = Read-Host "Enter the desired ProductVersion (Example: *Windows 10* *Windows 11* *Windows 12*)"
 
 PAUSE
 
+#Set the value of the TargetReleaseVersionInfo key by automatically getting the windows version
+Set-ItemProperty -Path "HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate" -Name "TargetReleaseVersionInfo" -Value (Get-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion" -Name "DisplayVersion").DisplayVersion
+
 # Set the value of the TargetReleaseVersionInfo key to the user-specified value
-Set-ItemProperty -Path "HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate" -Name "TargetReleaseVersionInfo" -Value $targetReleaseVersionInfo
+#Set-ItemProperty -Path "HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate" -Name "TargetReleaseVersionInfo" -Value $targetReleaseVersionInfo
 
 # Set the value of the ProductVersion key to the user-specified value
 Set-ItemProperty -Path "HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate" -Name "ProductVersion" -Value $productVersion
