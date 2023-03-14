@@ -1,5 +1,5 @@
 #v0.10.1
-
+## dont run as admin
 #Sets ExecutionPolicy
 if (!([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator"))
 {
@@ -103,4 +103,6 @@ powercfg -change -standby-timeout-dc 5
 
 #Sets brightness to 100%
 (Get-WmiObject -Namespace root/WMI -Class WmiMonitorBrightnessMethods).WmiSetBrightness(1, 100)
-Read-Host "UAC Enabled Press Enter to Exit"
+Read-Host "Press Enter to Exit"
+## copy updated by anthony
+## not done more to be done almost fully automated
