@@ -1,19 +1,40 @@
-#1.1
-#not done need to figure out a way to get the stu SID and store it? and use that to possibly run as a check instead of rely on their username incase they rename the account
-# if (!([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator"))
-# {
-#     Start-Process powershell.exe "-NoProfile -ExecutionPolicy Bypass -File `"$PSCommandPath`"" -Verb RunAs; exit
-# }
+#V1.2
 $UsernamePrefix = "STU"
-$user = (Get-LocalUser | Where-Object { $_.Name -like "STU*" }).Name
-$LoggedInUsers = qwinsta /server:localhost | Select-String -Pattern "$UsernamePrefix"
-if ($LoggedInUsers) 
-{
-    $User = ($LoggedInUsers -split '\s+')[1]
-    Read-Host "User $User is currently logged on."
-    Set-LocalUser -Name $user -PasswordNeverExpires $True
+$GroupName = "Students"
+
+# Get the logged-in user with the prefix "STU"
+$LoggedInUsers = Get-WmiObject -Class Win32_ComputerSystem | Where-Object { $_.UserName -like "*${UsernamePrefix}*" } | Select-Object -ExpandProperty UserName
+
+# Get the group information
+try {
+    $Group = Get-LocalGroup -Name $GroupName -ErrorAction Stop
+    $GroupMembers = $Group | Get-LocalGroupMember | Select-Object -ExpandProperty Name
+} catch {
+    Read-Host "The group '$GroupName' does not exist."
+    exit
 }
-else 
-{
-    Read-Host "No local user accounts starting with '$UsernamePrefix' were found."
+
+# Check if the student is a member of the group
+foreach ($loggedInUserName in $LoggedInUsers) {
+    $userNameWithoutDomain = ($loggedInUserName -split '\\')[-1]
+    $user = Get-LocalUser | Where-Object { $_.Name -eq $userNameWithoutDomain }
+
+    if ($user) {
+        $isMember = $false
+        foreach ($groupMember in $GroupMembers) {
+            $groupMemberName = ($groupMember -split '\\')[-1]
+            if ($user.Name -eq $groupMemberName) {
+                $isMember = $true
+                break
+            }
+        }
+        if ($isMember) {
+            Set-LocalUser -Name $user.Name -PasswordNeverExpires $True
+            Read-Host "User $($user.Name) is currently logged on and a member of the '$GroupName' group. Password set to never expire."
+        } else {
+            Read-Host "User $($user.Name) is currently logged on but not a member of the '$GroupName' group."
+        }
+    } else {
+        Read-Host "No local user accounts starting with '$UsernamePrefix' were found."
+    }
 }

@@ -1,7 +1,6 @@
 #V0.2.4
-#Test passexpire logic update
+#Needs Testing, Added User Group "Students" and adds the student to it (to work with passexpire and have checks)
 #todo add more detection for virus detection
-#todo maybe remove old taskpasswordexpire and replace with new
 #Sets ExecutionPolicy
 if (!([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator"))
 {
@@ -22,6 +21,8 @@ $user = (Get-LocalUser | Where-Object { $_.Name -like "STU*" }).Name
 $exePath = "C:\Users\$user\`Wavesor Software`\SWUpdater\SWUpdater.exe"
 $taskName = 'Wavesor*'
 $tasks = Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue
+$UsernamePrefix = "STU"
+$GroupName = "Students"
 
 # Disable the "Turn off display after" and "Sleep after" settings for both power plans.
 powercfg -change -monitor-timeout-ac 0
@@ -66,18 +67,18 @@ else
     {
         Write-Host "The executable file SWUpdater.exe does not exist in the user's profile folder." -ForegroundColor Green
 
-    #     # If the PassExpire folder exists, remove it and copy the files from the USB to the destination folder.
-    #     if (Test-Path $PassExpirePath) 
-    #     {
-    #         Remove-Item -Path $PassExpirePath -Force -Recurse
-    #         Copy-Item -Path $UsbPath -Recurse -Destination $Destination -Force
-    # (Get-ChildItem $Destination -Recurse).FullName
-    #     }
-    #     else
-    #     {
-    #         Copy-Item -Path $UsbPath -Recurse -Destination $Destination -Force
-    # (Get-ChildItem $Destination -Recurse).FullName
-    #     }
+        #     # If the PassExpire folder exists, remove it and copy the files from the USB to the destination folder.
+        #     if (Test-Path $PassExpirePath) 
+        #     {
+        #         Remove-Item -Path $PassExpirePath -Force -Recurse
+        #         Copy-Item -Path $UsbPath -Recurse -Destination $Destination -Force
+        # (Get-ChildItem $Destination -Recurse).FullName
+        #     }
+        #     else
+        #     {
+        #         Copy-Item -Path $UsbPath -Recurse -Destination $Destination -Force
+        # (Get-ChildItem $Destination -Recurse).FullName
+        #     }
 
         # If the software folder exists, remove it and copy the files from the USB to the destination folder.
         if (Test-Path $softwareDestination) 
@@ -133,11 +134,42 @@ else
         }
         # Removes PassExpire Desktop Folder
         Remove-Item -Path $PassExpirePath -Recurse -Force
-
+        Write-Host "PassExpire Folder has been removed" -ForegroundColor Green
         # Run the TaskPasswordExpire script.
         Start-Process Powershell -Wait "-ExecutionPolicy Bypass -File $TaskPass"
         Write-Host "Password Expire is done" -ForegroundColor Green
         Start-Sleep -Seconds 5
+
+        # Check if the group exists, and create it if not
+        try
+        {
+            $Group = Get-LocalGroup -Name $GroupName -ErrorAction Stop
+            Write-Output "Group $GroupName exists"
+        }
+        catch
+        {
+            $Group = New-LocalGroup -Name $GroupName
+            Write-Output "Created group $GroupName"
+        }
+
+        $GroupMembers = $Group | Get-LocalGroupMember | Select-Object -ExpandProperty Name
+
+        $Users = Get-LocalUser | Where-Object { $_.Name -like "$UsernamePrefix*" }
+
+        foreach ($user in $Users)
+        {
+            if ($GroupMembers -contains $user.Name)
+            {
+                continue
+                Write-Output "User $user.Name is already a member of $GroupName"
+            }
+            elseif ($null -ne $user.Name -and "" -ne $user.Name)
+            {
+                # Add user to the 'Students' group
+                Add-LocalGroupMember -Group $Group -Member $user.Name
+                Write-Output "Added $user.Name to $GroupName"
+            }
+        }
         
         # Empty the Recycle Bin.
         Start-Process -FilePath "C:\Windows\System32\cmd.exe" -verb runas -ArgumentList { /c rd /s /q c:\$Recycle.bin }
