@@ -1,6 +1,18 @@
-#V1.2
+#V1.2.1
 $UsernamePrefix = "STU"
 $GroupName = "Students"
+$LogFilePath = Join-Path $Home 'passexpire-debug.log'
+
+# Function to add timestamp to log entries
+function Log-Message {
+    param (
+        [string]$Message,
+        [string]$Path
+    )
+    $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+    $logEntry = "$timestamp $Message"
+    Add-Content -Path $Path -Value $logEntry
+}
 
 # Get the logged-in user with the prefix "STU"
 $LoggedInUsers = Get-WmiObject -Class Win32_ComputerSystem | Where-Object { $_.UserName -like "*${UsernamePrefix}*" } | Select-Object -ExpandProperty UserName
@@ -10,7 +22,7 @@ try {
     $Group = Get-LocalGroup -Name $GroupName -ErrorAction Stop
     $GroupMembers = $Group | Get-LocalGroupMember | Select-Object -ExpandProperty Name
 } catch {
-    Read-Host "The group '$GroupName' does not exist."
+    Log-Message -Message "The group '$GroupName' does not exist." -Path $LogFilePath
     exit
 }
 
@@ -30,11 +42,11 @@ foreach ($loggedInUserName in $LoggedInUsers) {
         }
         if ($isMember) {
             Set-LocalUser -Name $user.Name -PasswordNeverExpires $True
-            Read-Host "User $($user.Name) is currently logged on and a member of the '$GroupName' group. Password set to never expire."
+            Log-Message -Message "User $($user.Name) is currently logged on and a member of the '$GroupName' group. Password set to never expire." -Path $LogFilePath
         } else {
-            Read-Host "User $($user.Name) is currently logged on but not a member of the '$GroupName' group."
+            Log-Message -Message "User $($user.Name) is currently logged on but not a member of the '$GroupName' group." -Path $LogFilePath
         }
     } else {
-        Read-Host "No local user accounts starting with '$UsernamePrefix' were found."
+        Log-Message -Message "No local user accounts starting with '$UsernamePrefix' were found." -Path $LogFilePath
     }
 }
