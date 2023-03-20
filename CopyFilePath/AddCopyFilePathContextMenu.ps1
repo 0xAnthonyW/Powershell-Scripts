@@ -12,7 +12,7 @@ New-Item -Path $regPath -Force | Out-Null
 New-Item -Path "$regPath\command" -Force | Out-Null
 
 # Set the default value of the "command" subkey to the PowerShell command that copies the file path to the clipboard
-Set-ItemProperty -Path "$regPath\command" -Name "(Default)" -Value "cmd.exe /c echo %1 | clip"
+Set-ItemProperty -Path "$regPath\command" -Name "(Default)" -Value "cmd.exe /c echo.|set /p=%1|clip"
 
 
 Read-Host "Done.."
