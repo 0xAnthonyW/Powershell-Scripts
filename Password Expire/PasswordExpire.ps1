@@ -1,10 +1,8 @@
-#V1.2.1
-$UsernamePrefix = "STU"
-$GroupName = "Students"
-$LogFilePath = Join-Path $Home 'passexpire-debug.log'
+#V1.2.2
+#Gets current logged in user and if it doesnt match STU it wont set it to passneverexpire Works as it should.
 
-# Function to add timestamp to log entries
-function Log-Message {
+#creates logging
+function Write-LogMessage {
     param (
         [string]$Message,
         [string]$Path
@@ -14,39 +12,23 @@ function Log-Message {
     Add-Content -Path $Path -Value $logEntry
 }
 
-# Get the logged-in user with the prefix "STU"
-$LoggedInUsers = Get-WmiObject -Class Win32_ComputerSystem | Where-Object { $_.UserName -like "*${UsernamePrefix}*" } | Select-Object -ExpandProperty UserName
+$LogFilePath = Join-Path $Home 'loggedin-users.log'
+$UsernamePrefix = "STU"
 
-# Get the group information
-try {
-    $Group = Get-LocalGroup -Name $GroupName -ErrorAction Stop
-    $GroupMembers = $Group | Get-LocalGroupMember | Select-Object -ExpandProperty Name
-} catch {
-    Log-Message -Message "The group '$GroupName' does not exist." -Path $LogFilePath
-    exit
-}
+# Get the currently logged-in user using the explorer process
+$LoggedInUser = (Get-WmiObject -Class Win32_Process -Filter "Name = 'explorer.exe'").GetOwner().User
 
-# Check if the student is a member of the group
-foreach ($loggedInUserName in $LoggedInUsers) {
-    $userNameWithoutDomain = ($loggedInUserName -split '\\')[-1]
-    $user = Get-LocalUser | Where-Object { $_.Name -eq $userNameWithoutDomain }
+if ($LoggedInUser -like "${UsernamePrefix}*") {
+    Write-LogMessage -Message "Logged in user: $LoggedInUser" -Path $LogFilePath
 
-    if ($user) {
-        $isMember = $false
-        foreach ($groupMember in $GroupMembers) {
-            $groupMemberName = ($groupMember -split '\\')[-1]
-            if ($user.Name -eq $groupMemberName) {
-                $isMember = $true
-                break
-            }
-        }
-        if ($isMember) {
-            Set-LocalUser -Name $user.Name -PasswordNeverExpires $True
-            Log-Message -Message "User $($user.Name) is currently logged on and a member of the '$GroupName' group. Password set to never expire." -Path $LogFilePath
-        } else {
-            Log-Message -Message "User $($user.Name) is currently logged on but not a member of the '$GroupName' group." -Path $LogFilePath
-        }
+    $userObj = Get-LocalUser | Where-Object { $_.Name -eq $LoggedInUser }
+
+    if ($userObj) {
+        Set-LocalUser -Name $userObj.Name -PasswordNeverExpires $True
+        Write-LogMessage -Message "Password never expires set for user $($userObj.Name)." -Path $LogFilePath
     } else {
-        Log-Message -Message "No local user accounts starting with '$UsernamePrefix' were found." -Path $LogFilePath
+        Write-LogMessage -Message "Could not find local user account for user $($LoggedInUser)." -Path $LogFilePath
     }
+} else {
+    Write-LogMessage -Message "No student user logged in." -Path $LogFilePath
 }
