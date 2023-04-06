@@ -13,6 +13,7 @@ function Write-LogMessage {
     Add-Content -Path $Path -Value $logEntry
 }
 
+#Path of logs if using SYSTEM UID  C:\Windows\System32\config\systemprofile\loggedin-users.log 
 $LogFilePath = Join-Path $Home 'loggedin-users.log'
 $UsernamePrefix = "STU"
 
