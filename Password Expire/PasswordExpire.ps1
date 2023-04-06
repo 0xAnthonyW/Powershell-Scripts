@@ -1,34 +1,18 @@
-#V1.2.2
-#Gets current logged in user and if it doesnt match STU it wont set it to passneverexpire Works as it should.
-
-#creates logging
-function Write-LogMessage {
-    param (
-        [string]$Message,
-        [string]$Path
-    )
-    $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
-    $logEntry = "$timestamp $Message"
-    Add-Content -Path $Path -Value $logEntry
-}
-
-$LogFilePath = Join-Path $Home 'loggedin-users.log'
+#V1.2.3
+#removed debug logging no longer needed
+#Gets the current logged in user and if it matches STU it sets it to -PasswordNeverExpires
 $UsernamePrefix = "STU"
 
 # Get the currently logged-in user using the explorer process
 $LoggedInUser = (Get-WmiObject -Class Win32_Process -Filter "Name = 'explorer.exe'").GetOwner().User
 
-if ($LoggedInUser -like "${UsernamePrefix}*") {
-    Write-LogMessage -Message "Logged in user: $LoggedInUser" -Path $LogFilePath
-
+# Check if the user is a student and is logged in currently
+if ($LoggedInUser -like "${UsernamePrefix}*")
+{
     $userObj = Get-LocalUser | Where-Object { $_.Name -eq $LoggedInUser }
 
-    if ($userObj) {
+    if ($userObj)
+    {
         Set-LocalUser -Name $userObj.Name -PasswordNeverExpires $True
-        Write-LogMessage -Message "Password never expires set for user $($userObj.Name)." -Path $LogFilePath
-    } else {
-        Write-LogMessage -Message "Could not find local user account for user $($LoggedInUser)." -Path $LogFilePath
     }
-} else {
-    Write-LogMessage -Message "No student user logged in." -Path $LogFilePath
 }

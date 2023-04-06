@@ -1,5 +1,5 @@
 #Created by Anthony
-#Uses SYSTEM UID might change and see if i can use different id but for now this works.
+#Uses SYSTEM UID, Have to figure out a different way to check logged in user if i want to switch the UID back to Admin
 if (!([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator"))
 {
     Start-Process powershell.exe "-NoProfile -ExecutionPolicy Bypass -File `"$PSCommandPath`"" -Verb RunAs; exit
