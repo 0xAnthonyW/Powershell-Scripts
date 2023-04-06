@@ -1,4 +1,5 @@
 #V1.2.2
+#debugging path added next release removes logs for production use
 #Gets current logged in user and if it doesnt match STU it wont set it to passneverexpire Works as it should.
 
 #creates logging
