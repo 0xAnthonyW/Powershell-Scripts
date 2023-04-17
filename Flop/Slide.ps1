@@ -1,28 +1,34 @@
-#V0.2.4
-#Needs Testing, Added User Group "Students" and adds the student to it (to work with passexpire and have checks)
-#todo add more detection for virus detection
-#Sets ExecutionPolicy
+# Created By Anthony Walters
+# Slide V0.3
+# Run PowerShell as Admin.
 if (!([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator"))
 {
     Start-Process powershell.exe "-NoProfile -ExecutionPolicy Bypass -File `"$PSCommandPath`"" -Verb RunAs; exit
 }
+# Disable User Account Control (UAC) consent prompt.
+Set-ItemProperty -Path REGISTRY::HKEY_LOCAL_MACHINE\Software\Microsoft\Windows\CurrentVersion\Policies\System -Name ConsentPromptBehaviorAdmin -Value 0
+Write-Host "UAC DISABLED"
 
 # Set up some variables for the script.
-$TaskPass = 'C:\Users\admin\Desktop\TaskPasswordExpire.ps1'
-$flipme = 'C:\Users\admin\Desktop\Software\FlipMe.ps1'
 $UsbPath = 'D:\PassExpire'
+$WindowsBlocker = 'D:\Win11Blocker\WindowsBlocker.ps1'
+$software = 'D:\Win11Blocker\'
 $Destination = 'C:\Users\admin\Desktop'
+$TaskPass = Join-Path $Destination 'TaskPasswordExpire.ps1'
+$flipme = Join-Path $Destination 'FlipMe.ps1'
 $PassExpirePath = Join-Path $Destination 'PassExpire'
 $passfilePath = Join-Path $Destination 'PasswordExpire.ps1'
 $taskfilePath = Join-Path $Destination 'TaskPasswordExpire.ps1'
-$software = 'D:\Software'
-$softwareDestination = 'C:\Users\admin\Desktop\Software'
+$softwareDestination = Join-Path $Destination 'Software'
 $user = (Get-LocalUser | Where-Object { $_.Name -like "STU*" }).Name
 $exePath = "C:\Users\$user\`Wavesor Software`\SWUpdater\SWUpdater.exe"
-$taskName = 'Wavesor*'
-$tasks = Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue
+$WTaskName = 'Wavesor*'
+$tasks = Get-ScheduledTask -TaskName $WTaskName -ErrorAction SilentlyContinue
+$oldtaskexpire = Join-Path $Destination 'Task Password Expire.ps1'
 $UsernamePrefix = "STU"
-$GroupName = "Students"
+$GroupName = "Student"
+$PTaskName = "PassExpire"
+$AdminAccount = "admin"
 
 # Disable the "Turn off display after" and "Sleep after" settings for both power plans.
 powercfg -change -monitor-timeout-ac 0
@@ -30,16 +36,21 @@ powercfg -change -standby-timeout-ac 0
 powercfg -change -monitor-timeout-dc 0
 powercfg -change -standby-timeout-dc 0
 
+# Sets the administrator account password to never expire.
+Set-LocalUser -Name $AdminAccount  -PasswordNeverExpires $True
+
 #Sets brightness to 100%
 (Get-WmiObject -Namespace root/WMI -Class WmiMonitorBrightnessMethods).WmiSetBrightness(1, 100)
 
 if ($tasks)
 {
-    Write-Host "The following tasks were found with the name '$taskName':" -ForegroundColor Yellow
+    Write-Host "The following tasks were found with the name '$WTaskName':" -ForegroundColor Yellow
     $tasks | ForEach-Object 
     {
         Write-Host $_.TaskName
-
+        # Enable User Account Control (UAC) consent prompt.
+        Set-ItemProperty -Path REGISTRY::HKEY_LOCAL_MACHINE\Software\Microsoft\Windows\CurrentVersion\Policies\System -Name ConsentPromptBehaviorAdmin -Value 5
+        
         # Check if the SWUpdater.exe file exists in the user's profile folder. If it does, prompt for admin interaction.
         if (Test-Path $exePath)
         {
@@ -55,7 +66,7 @@ if ($tasks)
 }
 else
 {
-    Write-Host "No tasks were found with the name '$taskName'." -ForegroundColor Green
+    Write-Host "No tasks were found with the name '$WTaskName'." -ForegroundColor Green
     
     # Check if the SWUpdater.exe file exists in the user's profile folder. If it does, prompt for admin interaction.
     if (Test-Path $exePath)
@@ -66,21 +77,8 @@ else
     else
     {
         Write-Host "The executable file SWUpdater.exe does not exist in the user's profile folder." -ForegroundColor Green
-
-        #     # If the PassExpire folder exists, remove it and copy the files from the USB to the destination folder.
-        #     if (Test-Path $PassExpirePath) 
-        #     {
-        #         Remove-Item -Path $PassExpirePath -Force -Recurse
-        #         Copy-Item -Path $UsbPath -Recurse -Destination $Destination -Force
-        # (Get-ChildItem $Destination -Recurse).FullName
-        #     }
-        #     else
-        #     {
-        #         Copy-Item -Path $UsbPath -Recurse -Destination $Destination -Force
-        # (Get-ChildItem $Destination -Recurse).FullName
-        #     }
-
-        # If the software folder exists, remove it and copy the files from the USB to the destination folder.
+        #main
+        #Moves Software to Desktop
         if (Test-Path $softwareDestination) 
         {
             Remove-Item -Path $softwareDestination -Force -Recurse
@@ -97,7 +95,6 @@ else
         Set-TimeZone -Name 'Central Standard Time' -PassThru
         Write-Host "Timezone has been set to CST" -ForegroundColor Green
         Start-Sleep -Seconds 4
-        ##Testing
         # Remove and replace PassExpire folder with copy from USB
         if (Test-Path $PassExpirePath) 
         {
@@ -107,7 +104,7 @@ else
         Copy-Item $UsbPath -Destination $Destination -Force -Recurse
         Get-ChildItem $Destination -Recurse | Select-Object -ExpandProperty FullName
 
-        # Copy PasswordExpire.ps1 if it doesn't exist
+        # Copies PasswordExpire.ps1
         if (!(Test-Path $passfilePath -PathType Leaf))
         {
             Write-Host "Copying PasswordExpire.ps1 to $Destination..." -ForegroundColor Green
@@ -119,8 +116,17 @@ else
             Remove-Item $passfilePath -Force -Recurse
             Copy-Item (Join-Path $PassExpirePath 'PasswordExpire.ps1') $Destination -Force
         }
-
-        # Copy TaskPasswordExpire.ps1 if it doesn't exist
+        # Checks for old task password expire file that has a space in the name
+        if (Test-Path $oldtaskexpire) 
+        {
+            Write-Host "Removing existing Old Task Password Expire" -ForegroundColor Yellow
+            Remove-Item -Path $oldtaskexpire -Force -Recurse
+        }
+        else
+        {
+            Write-Host "Old Task Password Expire file does not exist." -ForegroundColor Green
+        }
+        # Copies TaskPasswordExpire.ps1
         if (!(Test-Path $taskfilePath -PathType Leaf))
         {
             Write-Host "Copying TaskPasswordExpire.ps1 to $Destination..." -ForegroundColor Green
@@ -135,12 +141,32 @@ else
         # Removes PassExpire Desktop Folder
         Remove-Item -Path $PassExpirePath -Recurse -Force
         Write-Host "PassExpire Folder has been removed" -ForegroundColor Green
+        # Check if the scheduled task exists
+        $Task = Get-ScheduledTask -TaskName $PTaskName -ErrorAction SilentlyContinue
+
+        if ($Task)
+        {
+            # If the task exists, delete it
+            try
+            {
+                Unregister-ScheduledTask -TaskName $PTaskName -Confirm:$false
+                Write-Host "Task '$PTaskName' has been deleted." -ForegroundColor Green
+            }
+            catch
+            {
+                Write-Host "Error: Unable to delete task '$PTaskName'." -ForegroundColor Red
+                Read-Host "Press Enter to continue."
+            }
+        }
+        else
+        {
+            Write-Host "Task '$PTaskName' not found." -ForegroundColor Green
+        }
         # Run the TaskPasswordExpire script.
         Start-Process Powershell -Wait "-ExecutionPolicy Bypass -File $TaskPass"
         Write-Host "Password Expire is done" -ForegroundColor Green
         Start-Sleep -Seconds 5
-
-        # Check if the group exists, and create it if not
+        # Check if the Student group exists, and create it if not
         try
         {
             $Group = Get-LocalGroup -Name $GroupName -ErrorAction Stop
@@ -152,22 +178,25 @@ else
             Write-Output "Created group $GroupName"
         }
 
-        $GroupMembers = $Group | Get-LocalGroupMember | Select-Object -ExpandProperty Name
-
         $Users = Get-LocalUser | Where-Object { $_.Name -like "$UsernamePrefix*" }
 
+        # Adds the STU to the Student Group 
         foreach ($user in $Users)
         {
-            if ($GroupMembers -contains $user.Name)
+            try
             {
-                continue
-                Write-Output "User $user.Name is already a member of $GroupName"
+                # Check if the user is directly or indirectly a member of the group
+                Get-LocalGroupMember -Group $GroupName -Member $user.Name -ErrorAction Stop
+                Write-Output "User $($user.Name) is already a member of $GroupName"
             }
-            elseif ($null -ne $user.Name -and "" -ne $user.Name)
+            catch
             {
-                # Add user to the 'Students' group
-                Add-LocalGroupMember -Group $Group -Member $user.Name
-                Write-Output "Added $user.Name to $GroupName"
+                if ($null -ne $user.Name -and "" -ne $user.Name)
+                {
+                    # Add user to the 'Students' group
+                    Add-LocalGroupMember -Group $Group -Member $user.Name
+                    Write-Output "Added $($user.Name) to $GroupName"
+                }
             }
         }
         
@@ -177,7 +206,40 @@ else
         
         # Run the FlipMe script.
         Start-Process Powershell -Wait "-ExecutionPolicy Bypass -File $flipme"
-        Read-Host "Flipping is done. Press Enter to Exit" -ForegroundColor Green
+        Write-Host "Flipping is done" -ForegroundColor Green
+
+        function Get-DisplayVersion ($registryPath) 
+        {
+            return (Get-ItemProperty -Path $registryPath).DisplayVersion
+        }
+        
+        $registryPaths = @{
+            "Path1" = "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion"
+            "Path2" = "HKLM:\SOFTWARE\WOW6432Node\Microsoft\Windows NT\CurrentVersion"
+        }
+        
+        $displayVersions = @{}
+        
+        foreach ($entry in $registryPaths.GetEnumerator())
+        {
+            $displayVersions[$entry.Name] = Get-DisplayVersion -registryPath $entry.Value
+            Write-Output "$($entry.Name) Display Version: $($displayVersions[$entry.Name])"
+        }
+        
+        if ($displayVersions["Path1"] -eq $displayVersions["Path2"]) 
+        {
+            Write-Host "Both Display Versions match." -ForegroundColor Green
+            Start-Process Powershell -Wait "-ExecutionPolicy Bypass -File $WindowsBlocker"
+            Write-Host "Flipping is done" -ForegroundColor Green
+        }
+        else 
+        {
+            Write-Host "Display Versions Mismatch Detected. No further action needed" -ForegroundColor White
+        }
+        
+        # Enable User Account Control (UAC) consent prompt.
+        Set-ItemProperty -Path REGISTRY::HKEY_LOCAL_MACHINE\Software\Microsoft\Windows\CurrentVersion\Policies\System -Name ConsentPromptBehaviorAdmin -Value 5
+        Read-Host "UAC Enabled Press Enter to Exit"
         
         # Set the "Turn off display after" and "Sleep after" settings to 10 minutes for the "Plugged in" power plan, and 5 minutes for the "On battery" power plan.
         powercfg -change -monitor-timeout-ac 10
@@ -188,6 +250,5 @@ else
         #Sets brightness to 100%
         (Get-WmiObject -Namespace root/WMI -Class WmiMonitorBrightnessMethods).WmiSetBrightness(1, 100)
         Read-Host "All done press enter to exit"
-        ## not done more to be done almost fully automated
     }
 }

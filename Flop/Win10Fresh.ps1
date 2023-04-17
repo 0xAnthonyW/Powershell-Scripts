@@ -1,10 +1,14 @@
-#v0.10.1
-## dont run as admin
-#Sets ExecutionPolicy
+# Created By Anthony
+# Win10Fresh v0.10.2
+# Run PowerShell as Admin.
 if (!([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator"))
 {
     Start-Process powershell.exe "-NoProfile -ExecutionPolicy Bypass -File `"$PSCommandPath`"" -Verb RunAs; exit
 }
+
+# Disable User Account Control (UAC) consent prompt.
+Set-ItemProperty -Path REGISTRY::HKEY_LOCAL_MACHINE\Software\Microsoft\Windows\CurrentVersion\Policies\System -Name ConsentPromptBehaviorAdmin -Value 0
+Write-Host "UAC DISABLED" -ForegroundColor Yellow
 
 # Disable the "Turn off display after" and "Sleep after" settings for both power plans.
 powercfg -change -monitor-timeout-ac 0
@@ -29,10 +33,14 @@ $updatesDestination = 'C:\Users\admin\Desktop\Updates'
 $Drivers = 'C:\Users\admin\Desktop\Updates\Scripts\830Drivers.bat'
 $MSU = 'D:\Updates\Scripts\MSU.ps1'
 $WindowsBlocker = 'C:\Users\admin\Desktop\Software\Updated-By-Anthony\WindowsBlocker-V1-2.ps1'
+$AdminAccount = "admin"
 
 # UserAccount
 Start-Process Powershell -Wait "-ExecutionPolicy Bypass -File $usrAccount"
 Start-Sleep -Seconds 10
+
+# Sets the administrator account password to never expire.
+Set-LocalUser -Name $AdminAccount  -PasswordNeverExpires $True
 
 if (Test-Path $softwareDestination) 
 {
@@ -95,6 +103,9 @@ Start-Process Powershell -Wait "-ExecutionPolicy Bypass -File $flipme"
 Write-Host "Flipping is done" -ForegroundColor Green
 Start-Process Powershell -Wait "-ExecutionPolicy Bypass -File $WindowsBlocker"
 
+#UAC Enabled
+Set-ItemProperty -Path REGISTRY::HKEY_LOCAL_MACHINE\Software\Microsoft\Windows\CurrentVersion\Policies\System -Name ConsentPromptBehaviorAdmin -Value 5
+Write-Host "UAC Enabled" -ForegroundColor Green
 # Set the "Turn off display after" and "Sleep after" settings to 10 minutes for the "Plugged in" power plan, and 5 minutes for the "On battery" power plan.
 powercfg -change -monitor-timeout-ac 10
 powercfg -change -standby-timeout-ac 10

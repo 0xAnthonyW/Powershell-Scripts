@@ -1,17 +1,31 @@
-<# Created By Anthony
-User Utilities v1.1.4#>
-#This script is used to reset the password, time zone and network adapter for a user. It assumes the user has been granted the required permissions to execute the functions.
+# Created By Anthony
+# User Utilities v1.2.1
+# This script is used to reset the password, time zone and network adapter for a user. It assumes the user has been granted the required permissions to execute the functions.
+# Run PowerShell as Admin.
 
-#Run PowerShell as Admin.
 if (!([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator"))
 {
     Start-Process powershell.exe "-NoProfile -ExecutionPolicy Bypass -File `"$PSCommandPath`"" -Verb RunAs; exit
 }
 
+# Gets the student account
+$Student = (Get-LocalUser | Where-Object { $_.Name -like "STU*" }).Name
+function Show-Menu
+{
+    Write-Host "Choose an option:"
+    Write-Host "1) Reset Password"
+    Write-Host "2) Set Password Never Expires"
+    Write-Host "3) Reset Time Zone"
+    Write-Host "4) Reset Network Adapter"
+    Write-Host "5) Create User"
+    Write-Host "6) Delete User"
+    Write-Host ""
+}
+
 Try
 {
-    #This function resets the password of the user to 'Student' and sets it to require a change at next login.
-    function Reset-UserPassword
+    # This function resets the password of the user to 'Student' and sets it to require a change at next login.
+    function Reset-Password
     {
         Param([string]$Student)
         # Sets the Password Never Expires to false to ensure logonpasswordchg can be set
@@ -20,14 +34,16 @@ Try
         net user $Student "Student" /logonpasswordchg:yes
         Write-Host "Password for user $Student has been reset to 'Student' and set to user must change password at next login" -ForegroundColor Green
     }
-    #This function sets the Real Time Clock to 'Central Standard Time'
-    function Reset-Timezone
+
+    # This function sets the Real Time Clock to 'Central Standard Time'
+    function Reset-TimeZone
     {
         # Sets the Real Time Clock to 'Central Standard Time'
         Set-TimeZone -Name 'Central Standard Time' -PassThru
         Write-Host "Timezone has been set to CST" -ForegroundColor Green
     }
-    #This function resets the network adapter, clears the DNS cache and releases/renews IP configuration
+
+    # This function resets the network adapter, clears the DNS cache and releases/renews IP configuration
     function Reset-NetworkAdapter
     {
         Restart-NetAdapter -Name "Wi*"
@@ -50,6 +66,7 @@ Try
         Start-Sleep -Seconds 4
         Restart-Computer -force
     }
+
     function Add-User
     {
         #Get-CimInstance -Class Win32_UserProfile | Where-Object { $_.LocalPath.split('\')[-1] -like 'STU*' } | Remove-CimInstance
@@ -62,6 +79,7 @@ Try
         net user $in /logonpasswordchg:yes
         PAUSE
     }
+
     function Remove-User
     {
         # List all local users and prompt the user to select a user to delete
@@ -92,32 +110,26 @@ Try
                 Write-Host "User '$user' has not been deleted"
             }
         }
-        else {
+        else
+        {
             Write-Host "Invalid input. Please enter a number between 1 and $($users.Count)"
         }
-        
     }
-    #Gets the student account
-    $Student = (Get-LocalUser | Where-Object { $_.Name -like "STU*" }).Name
-    #The options menu provides the user with a choice of functions. Depending on the option chosen, the appropriate function is run.
+
+    # The options menu provides the user with a choice of functions. Depending on the option chosen, the appropriate function is run.
     Try
     {
         while ($true)
         {
-            $userinput = Read-Host "Choose an option:
-1) Password Reset
-2) Password Never Expires
-3) Real Time Clock Fix
-4) Wifi Reset
-5) Create User
-6) Delete User
-"
+            Show-Menu
+            $userinput = Read-Host "Enter your choice"
+
             switch ($userinput)
             {
                 '1'
                 {
                     Reset-UserPassword $Student
-                    PAUSE #Exit
+                    PAUSE
                 }
                 '2'
                 {
@@ -127,7 +139,7 @@ Try
                 }
                 '3'
                 {
-                    Reset-Timezone
+                    Reset-TimeZone
                     PAUSE
                 }
                 '4'
@@ -154,6 +166,11 @@ Try
             if ($exit -eq 'Y')
             {
                 exit
+            }
+            else 
+            {
+                Clear-Host # Clear the console
+                # The options will be refreshed in the next iteration of the while loop
             }
         }
     }

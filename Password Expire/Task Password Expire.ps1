@@ -1,5 +1,7 @@
-#Created by Anthony
-#Uses SYSTEM UID, Have to figure out a different way to check logged in user if i want to switch the UID back to Admin
+# Created By Anthony Walters
+# Task Password Expire
+# Sets up Scheduled Task to run the PasswordExpire Script in the background.
+# Run PowerShell as Admin
 if (!([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator"))
 {
     Start-Process powershell.exe "-NoProfile -ExecutionPolicy Bypass -File `"$PSCommandPath`"" -Verb RunAs; exit
