@@ -1,4 +1,4 @@
-# Created By Anthony Walters
+# Created By Anthony
 # Slide V0.3
 # Run PowerShell as Admin.
 if (!([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator"))

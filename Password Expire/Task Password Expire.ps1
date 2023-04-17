@@ -1,4 +1,4 @@
-# Created By Anthony Walters
+# Created By Anthony
 # Task Password Expire
 # Sets up Scheduled Task to run the PasswordExpire Script in the background.
 # Run PowerShell as Admin
