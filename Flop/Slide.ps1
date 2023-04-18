@@ -15,7 +15,7 @@ $WindowsBlocker = 'D:\Win11Blocker\WindowsBlocker.ps1'
 $software = 'D:\Software'
 $Destination = 'C:\Users\admin\Desktop'
 $TaskPass = Join-Path $Destination 'TaskPasswordExpire.ps1'
-$flipme = Join-Path $Destination 'FlipMe.ps1'
+$flipme = Join-Path $Destination 'Software\FlipMe.ps1'
 $PassExpirePath = Join-Path $Destination 'PassExpire'
 $passfilePath = Join-Path $Destination 'PasswordExpire.ps1'
 $taskfilePath = Join-Path $Destination 'TaskPasswordExpire.ps1'
@@ -207,36 +207,46 @@ else
         # Run the FlipMe script.
         Start-Process Powershell -Wait "-ExecutionPolicy Bypass -File $flipme"
         Write-Host "Flipping is done" -ForegroundColor Green
-
-        function Get-DisplayVersion ($registryPath) 
-        {
-            return (Get-ItemProperty -Path $registryPath).DisplayVersion
-        }
-        
+        # Checks the Version of Windows if its 22H2
         $registryPaths = @{
-            "Path1" = "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion"
+            "Path1" = "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion";
             "Path2" = "HKLM:\SOFTWARE\WOW6432Node\Microsoft\Windows NT\CurrentVersion"
         }
         
-        $displayVersions = @{}
-        
-        foreach ($entry in $registryPaths.GetEnumerator())
-        {
-            $displayVersions[$entry.Name] = Get-DisplayVersion -registryPath $entry.Value
-            Write-Output "$($entry.Name) Display Version: $($displayVersions[$entry.Name])"
+        function Get-DisplayVersion ($registryPath) {
+            $displayVersion = (Get-ItemProperty -Path $registryPath).DisplayVersion
+            return $displayVersion
         }
         
-        if ($displayVersions["Path1"] -eq $displayVersions["Path2"]) 
+        function Get-DisplayVersions($registryPaths) 
         {
-            Write-Host "Both Display Versions match." -ForegroundColor Green
-            Start-Process Powershell -Wait "-ExecutionPolicy Bypass -File $WindowsBlocker"
-            Write-Host "Flipping is done" -ForegroundColor Green
-        }
-        else 
-        {
-            Write-Host "Display Versions Mismatch Detected. No further action needed" -ForegroundColor White
-        }
+            $displayVersions = @{}
         
+            foreach ($entry in $registryPaths.GetEnumerator()) 
+            {
+                $displayVersions[$entry.Name] = Get-DisplayVersion -registryPath $entry.Value
+            }
+        
+            return $displayVersions
+        }
+        $displayVersions = Get-DisplayVersions -registryPaths $registryPaths
+        
+        if (($displayVersions["Path1"] -ne $null) -and ($displayVersions["Path2"] -ne $null))
+        {
+            if ($displayVersions["Path1"] -ieq $displayVersions["Path2"] -and $displayVersions["Path1"] -ieq "22H2") 
+            {
+                Write-Host "Both Display Versions match and are 22H2." -ForegroundColor Green
+                Start-Process Powershell -Wait "-ExecutionPolicy Bypass -File $WindowsBlocker"
+                Write-Host "WindowsBlocker is done." -ForegroundColor Green
+            } 
+            elseif ($displayVersions["Path1"] -ieq $displayVersions["Path2"]) {
+                Write-Host "Display Versions match but are not 22H2." -ForegroundColor Yellow
+            }
+            else {
+                Write-Host "Display Versions Mismatch Detected. No further action needed" -ForegroundColor White
+            }
+        }
+
         # Enable User Account Control (UAC) consent prompt.
         Set-ItemProperty -Path REGISTRY::HKEY_LOCAL_MACHINE\Software\Microsoft\Windows\CurrentVersion\Policies\System -Name ConsentPromptBehaviorAdmin -Value 5
         Read-Host "UAC Enabled Press Enter to Exit"
@@ -252,3 +262,4 @@ else
         Read-Host "All done press enter to exit"
     }
 }
+
