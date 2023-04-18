@@ -1,5 +1,5 @@
 # Created By Anthony
-# Slide V0.3
+# Slide V0.4
 # Run PowerShell as Admin.
 if (!([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator"))
 {
@@ -12,7 +12,7 @@ Write-Host "UAC DISABLED"
 # Set up some variables for the script.
 $UsbPath = 'D:\PassExpire'
 $WindowsBlocker = 'D:\Win11Blocker\WindowsBlocker.ps1'
-$software = 'D:\Win11Blocker\'
+$software = 'D:\Software'
 $Destination = 'C:\Users\admin\Desktop'
 $TaskPass = Join-Path $Destination 'TaskPasswordExpire.ps1'
 $flipme = Join-Path $Destination 'FlipMe.ps1'
