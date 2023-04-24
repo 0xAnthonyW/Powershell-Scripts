@@ -1,4 +1,4 @@
-# Created By Anthony Walters
+# Created By Anthony
 # User Utilities v1.2.2
 # This script is used to reset the password, time zone and network adapter for a user. It assumes the user has been granted the required permissions to execute the functions.
 # Run PowerShell as Admin.
@@ -128,7 +128,6 @@ Try
             {
                 '1'
                 {
-                    #Reset-UserPassword $Student
                     Reset-Password $Student
                     PAUSE
                 }
