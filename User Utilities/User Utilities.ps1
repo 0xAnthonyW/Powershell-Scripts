@@ -1,5 +1,5 @@
-# Created By Anthony Walters
-# User Utilities v1.2.2
+# Created By Anthony
+# User Utilities v1.2.3
 # This script is used to reset the password, time zone and network adapter for a user. It assumes the user has been granted the required permissions to execute the functions.
 # Run PowerShell as Admin.
 
@@ -19,6 +19,7 @@ function Show-Menu
     Write-Host "4) Reset Network Adapter"
     Write-Host "5) Create User"
     Write-Host "6) Delete User"
+    Write-Host "7) Smart Card Driver"
     Write-Host ""
 }
 
@@ -128,7 +129,6 @@ Try
             {
                 '1'
                 {
-                    #Reset-UserPassword $Student
                     Reset-Password $Student
                     PAUSE
                 }
@@ -156,6 +156,13 @@ Try
                 '6'
                 {
                     Remove-User
+                    PAUSE
+                }
+                '7'
+                {
+                    $smartcardpath = "D:\sp98312 - Smart Card Reader.exe"
+                    Start-Process $smartcardpath
+                    rundll32.exe shell32.dll,Control_RunDLL inetcpl.cpl,1,3
                     PAUSE
                 }
                 default
