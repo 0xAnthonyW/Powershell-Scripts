@@ -1,5 +1,5 @@
 # Created By Anthony
-# Slide V0.4
+# Slide V0.4.1
 # Run PowerShell as Admin.
 if (!([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator"))
 {
@@ -45,8 +45,7 @@ Set-LocalUser -Name $AdminAccount  -PasswordNeverExpires $True
 if ($tasks)
 {
     Write-Host "The following tasks were found with the name '$WTaskName':" -ForegroundColor Yellow
-    $tasks | ForEach-Object 
-    {
+    $tasks | ForEach-Object {
         Write-Host $_.TaskName
         # Enable User Account Control (UAC) consent prompt.
         Set-ItemProperty -Path REGISTRY::HKEY_LOCAL_MACHINE\Software\Microsoft\Windows\CurrentVersion\Policies\System -Name ConsentPromptBehaviorAdmin -Value 5
