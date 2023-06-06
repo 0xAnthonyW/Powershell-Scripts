@@ -19,8 +19,8 @@ powercfg -change -standby-timeout-dc 0
 #Sets brightness to 100%
 (Get-WmiObject -Namespace root/WMI -Class WmiMonitorBrightnessMethods).WmiSetBrightness(1, 100)
 
-# Checks for dirve letter E, F and removes them
-$volumes = Get-Volume | Where-Object { $_.DriveLetter -in 'E','F' }
+# Get a list of all volumes on the system
+$volumes = Get-Volume | Where-Object { $_.FileSystemLabel -eq 'UEFI_NTFS' }
 
 foreach ($volume in $volumes) {
     $driveLetter = $volume.DriveLetter
