@@ -1,5 +1,5 @@
-# Created By Anthony
-# Win10Fresh v0.10.2
+# Created By Anthony Walters
+# Win10Fresh v0.10.3
 # Run PowerShell as Admin.
 if (!([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator"))
 {
@@ -19,24 +19,41 @@ powercfg -change -standby-timeout-dc 0
 #Sets brightness to 100%
 (Get-WmiObject -Namespace root/WMI -Class WmiMonitorBrightnessMethods).WmiSetBrightness(1, 100)
 
+# Checks for dirve letter E, F and removes them
+$volumes = Get-Volume | Where-Object { $_.DriveLetter -in 'E','F' }
+
+foreach ($volume in $volumes) {
+    $driveLetter = $volume.DriveLetter
+    $volumePath = "${driveLetter}:"
+    $diskpartScript = @"
+select volume $driveLetter
+remove letter=$driveLetter
+"@
+    $diskpartScript | diskpart
+}
+
 # Set up some variables for the script.
 $TaskPass = 'C:\Users\admin\Desktop\TaskPasswordExpire.ps1'
 $flipme = 'C:\Users\admin\Desktop\Software\FlipMe.ps1'
 $UsbPath = 'D:\PassExpire'
 $Destination = 'C:\Users\admin\Desktop'
 $PassExpirePath = 'C:\Users\admin\Desktop\PassExpire'
-$usrAccount = 'D:\UserAccount.ps1'
 $software = 'D:\Software'
 $softwareDestination = 'C:\Users\admin\Desktop\Software'
 $updates = 'D:\Updates'
 $updatesDestination = 'C:\Users\admin\Desktop\Updates'
 $Drivers = 'C:\Users\admin\Desktop\Updates\Scripts\830Drivers.bat'
-$MSU = 'D:\Updates\Scripts\MSU.ps1'
-$WindowsBlocker = 'C:\Users\admin\Desktop\Software\Updated-By-Anthony\WindowsBlocker-V1-2.ps1'
+$MSU = 'C:\Users\admin\Desktop\Updates\Scripts\MSU.ps1'
+$WindowsBlocker = 'D:\Win11Blocker\WindowsBlocker.ps1'
 $AdminAccount = "admin"
 
 # UserAccount
-Start-Process Powershell -Wait "-ExecutionPolicy Bypass -File $usrAccount"
+$studentAccount = Read-host "Enter Student Account Name"
+$StuPassword = "Student" | ConvertTo-SecureString -AsPlainText -Force
+New-LocalUser -Name "$studentAccount" -Description "$studentAccount" -Password $StuPassword -Verbose
+Add-LocalGroupMember -Group "Users" -Member "$studentAccount"
+Set-LocalUser -Name "$studentAccount"
+net user $studentAccount /logonpasswordchg:yes
 Start-Sleep -Seconds 10
 
 # Sets the administrator account password to never expire.
@@ -70,14 +87,36 @@ else
 Set-TimeZone -Name 'Central Standard Time' -PassThru
 
 # Drivers
-Start-Process -FilePath "$Drivers"-Wait -NoNewWindow
+$driverPaths = @(
+    "D:\Updates\HP830Drivers\sp135655 LAN.exe",
+    "D:\Updates\HP830Drivers\sp135924 Audio.exe",
+    "D:\Updates\HP830Drivers\sp136847 Graphics.exe",
+    "D:\Updates\HP830Drivers\sp137116 WLAN.exe",
+    "D:\Updates\HP830Drivers\sp102081 - Intel Video.exe",
+    "D:\Updates\HP830Drivers\sp98312 - Smart Card Reader.exe",
+    "D:\Updates\HP830Drivers\sp99654 - Ethernet.exe"
+)
 
-# Start-Sleep -Seconds 20
-Write-Host "Drivers installed" -ForegroundColor Green
-Start-Process Powershell -Wait "-ExecutionPolicy Bypass -File $MSU"
+foreach ($driverPath in $driverPaths) {
+    Write-Host "Installing $driverPath"
+    Start-Process -FilePath "$driverPath" -ArgumentList "/s" -Wait -NoNewWindow
+}
+
+Write-Host "All drivers installed" -ForegroundColor Green
+
+# Updates
+$UpdatePath = "C:\Users\Admin\Desktop\Updates\MSU"
+
+$Updates = Get-ChildItem -Path $UpdatePath -Recurse | Where-Object {$_.Name -like "*msu*"}
+
+ForEach ($update in $Updates) {
+$UpdateFilePath = $update.FullName
+write-host "Installing update $($update.BaseName)"
+Start-Process -wait wusa -ArgumentList "/update $UpdateFilePath","/quiet","/norestart"
+}
 Write-Host "Updates installed" -ForegroundColor Green
 
-## Pass Expire
+# Pass Expire
 if (Test-Path $PassExpirePath) 
 {
     Remove-Item -Path $PassExpirePath -Force -Recurse
@@ -94,26 +133,25 @@ Move-Item -Path 'C:\Users\admin\Desktop\PassExpire\PasswordExpire.ps1' -Destinat
 Move-Item -Path 'C:\Users\admin\Desktop\PassExpire\TaskPasswordExpire.ps1' -Destination $Destination 
 Remove-Item -Path $PassExpirePath -Recurse
 
-##TaskPasswordExpire
+# TaskPasswordExpire
 Start-Process Powershell -Wait "-ExecutionPolicy Bypass -File $TaskPass"
 Start-Sleep -Seconds 4
 
-##Flip Me
+# Flip Me
 Start-Process Powershell -Wait "-ExecutionPolicy Bypass -File $flipme"
 Write-Host "Flipping is done" -ForegroundColor Green
 Start-Process Powershell -Wait "-ExecutionPolicy Bypass -File $WindowsBlocker"
 
-#UAC Enabled
+# UAC Enabled
 Set-ItemProperty -Path REGISTRY::HKEY_LOCAL_MACHINE\Software\Microsoft\Windows\CurrentVersion\Policies\System -Name ConsentPromptBehaviorAdmin -Value 5
 Write-Host "UAC Enabled" -ForegroundColor Green
+
 # Set the "Turn off display after" and "Sleep after" settings to 10 minutes for the "Plugged in" power plan, and 5 minutes for the "On battery" power plan.
 powercfg -change -monitor-timeout-ac 10
 powercfg -change -standby-timeout-ac 10
 powercfg -change -monitor-timeout-dc 5
 powercfg -change -standby-timeout-dc 5
 
-#Sets brightness to 100%
+# Sets brightness to 100%
 (Get-WmiObject -Namespace root/WMI -Class WmiMonitorBrightnessMethods).WmiSetBrightness(1, 100)
 Read-Host "Press Enter to Exit"
-## copy updated by anthony
-## not done more to be done almost fully automated
