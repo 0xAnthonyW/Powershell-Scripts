@@ -93,7 +93,7 @@ $driverPaths = @(
     "D:\Updates\HP830Drivers\sp136847 Graphics.exe",
     "D:\Updates\HP830Drivers\sp137116 WLAN.exe",
     "D:\Updates\HP830Drivers\sp102081 - Intel Video.exe",
-    "D:\Updates\HP830Drivers\sp98312 - Smart Card Reader.exe",
+    "D:\Updates\HP830Drivers\sp112848 Smart Card Reader.exe",
     "D:\Updates\HP830Drivers\sp99654 - Ethernet.exe"
 )
 
