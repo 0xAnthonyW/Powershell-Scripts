@@ -3,14 +3,14 @@
 # This script is used to reset the password, time zone and network adapter for a user. It assumes the user has been granted the required permissions to execute the functions.
 # Run PowerShell as Admin.
 
-if (!([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")) 
+if (!([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator"))
 {
     Start-Process powershell.exe "-NoProfile -ExecutionPolicy Bypass -File `"$PSCommandPath`"" -Verb RunAs; exit
 }
 
 # Gets the student account
 $Student = (Get-LocalUser | Where-Object { $_.Name -like "STU*" }).Name
-function Show-Menu 
+function Show-Menu
 {
     Write-Host "Choose an option:"
     Write-Host "1) Reset Password"
@@ -25,10 +25,10 @@ function Show-Menu
     Write-Host ""
 }
 
-Try 
+Try
 {
     # This function resets the password of the user to 'Student' and sets it to require a change at next login.
-    function Reset-Password 
+    function Reset-Password
     {
         Param([string]$Student)
         # Sets the Password Never Expires to false to ensure logonpasswordchg can be set
@@ -39,7 +39,7 @@ Try
     }
 
     # This function sets the Real Time Clock to 'Central Standard Time'
-    function Reset-TimeZone 
+    function Reset-TimeZone
     {
         # Sets the Real Time Clock to 'Central Standard Time'
         Set-TimeZone -Name 'Central Standard Time' -PassThru
@@ -47,7 +47,7 @@ Try
     }
 
     # This function resets the network adapter, clears the DNS cache and releases/renews IP configuration
-    function Reset-NetworkAdapter 
+    function Reset-NetworkAdapter
     {
         Restart-NetAdapter -Name "Wi*"
         Write-Host "Network adapter restarted" -ForegroundColor Green
@@ -70,7 +70,7 @@ Try
         Restart-Computer -force
     }
 
-    function Install-SoundDriver 
+    function Install-SoundDriver
     {
         # Install Sound Driver
         $drivers = "D:\Drivers\sp102373 -Audio.exe"
@@ -78,7 +78,7 @@ Try
         Write-Output "Sound Driver Installed"
     }
 
-    function Add-User 
+    function Add-User
     {
         #Get-CimInstance -Class Win32_UserProfile | Where-Object { $_.LocalPath.split('\')[-1] -like 'STU*' } | Remove-CimInstance
         $in = Read-host "Enter Student Account Name"
@@ -91,53 +91,52 @@ Try
         PAUSE
     }
 
-    function Remove-User 
+    function Remove-User
     {
         # List all local users and prompt the user to select a user to delete
         $users = Get-LocalUser | Select-Object Name | Sort-Object Name
         Write-Host "The following local users are found on this computer:"
         $i = 1
-        foreach ($user in $users) 
+        foreach ($user in $users)
         {
             Write-Host "$i) $($user.Name)"
             $i++
         }
-        
+
         $userToDelete = Read-Host "Enter the number of the user you wish to delete"
-        
-        if ([int]$userToDelete -ge 1 -and [int]$userToDelete -le $users.Count) 
+        if ([int]$userToDelete -ge 1 -and [int]$userToDelete -le $users.Count)
         {
             $user = $users[[int]$userToDelete - 1]
             $user = $user.Name
             Write-Host "You have selected user '$user' to delete"
             $confirm = Read-Host "Are you sure you want to delete user '$user'? (Y/N)"
-            if ($confirm -eq "Y") 
+            if ($confirm -eq "Y")
             {
                 Remove-LocalUser -Name $user -Confirm:$false
                 Write-Host "User '$user' has been deleted"
             }
-            else 
+            else
             {
                 Write-Host "User '$user' has not been deleted"
             }
         }
-        else 
+        else
         {
             Write-Host "Invalid input. Please enter a number between 1 and $($users.Count)"
         }
     }
-    function Install-SmartCardDriver 
+    function Install-SmartCardDriver
     {
         # Install Smart Card Driver
-        #$smartcarddrivers = "D:\Drivers\sp98312 - Smart Card Reader.exe"
-        #Start-Process -FilePath $smartcarddrivers -ArgumentList "/s" -Wait
+        $smartcarddrivers = "D:\Drivers\sp98312 - Smart Card Reader.exe"
+        Start-Process -FilePath $smartcarddrivers -ArgumentList "/s" -Wait
         Write-Output "Smart Card Driver Installed"
-       $opencert = Read-Host -Prompt "Do you want to open the Certficates? (Y/N)"
-        if ($opencert -eq "Y") #fix
+        $opencert = Read-Host -Prompt "Do you want to open the Certficates? (Y/N)"
+        if ($opencert -eq "Y")
         {
             rundll32.exe shell32.dll,Control_RunDLL inetcpl.cpl,1,3
         }
-        else 
+        else
         {
             Write-Host "Done"
         }
@@ -147,7 +146,7 @@ Try
         # Uninstall Chrome
         $chromePath = "C:\Program Files (x86)\Google\Chrome\Application\chrome.exe"
         Start-Process -FilePath $chromePath -ArgumentList "/uninstall" -Wait
-    
+
         # Delete Chrome installation folder
         $chromeFolder = "C:\Program Files (x86)\Google\Chrome"
         Remove-Item -Path $chromeFolder -Recurse -Force
@@ -166,10 +165,10 @@ Try
             Remove-ItemProperty -Path $key -Name * -Recurse -Force -ErrorAction SilentlyContinue
             Remove-Item -Path $key -Recurse -Force -ErrorAction SilentlyContinue
         }
-    
+
         # Prompt user to choose installation type
         $installType = Read-Host "Enter installation type (online/offline)"
-    
+
         if ($installType -eq "offline")
         {
             # Install Chrome offline
@@ -194,21 +193,21 @@ Try
         }
     }
     # The options menu provides the user with a choice of functions. Depending on the option chosen, the appropriate function is run.
-    Try 
+    Try
     {
-        while ($true) 
+        while ($true)
         {
             Show-Menu
             $userinput = Read-Host "Enter your choice"
 
-            switch ($userinput) 
+            switch ($userinput)
             {
-                '1' 
+                '1'
                 {
                     Reset-Password $Student
                     PAUSE
                 }
-                '2' 
+                '2'
                 {
                     Set-LocalUser -Name $Student -PasswordNeverExpires $True
                     Write-Host "Password has been set to not expire" -ForegroundColor Green
@@ -219,43 +218,43 @@ Try
                     Reset-TimeZone
                     PAUSE
                 }
-                '4' 
+                '4'
                 {
                     Reset-NetworkAdapter
                     PAUSE
                 }
-                '5' 
+                '5'
                 {
                     Add-User
                     PAUSE
                 }
-                '6' 
+                '6'
                 {
                     Remove-User
                     PAUSE
                 }
-                '7' 
+                '7'
                 {
                     Install-SmartCardDriver
                     PAUSE
                 }
-                '8' 
+                '8'
                 {
                     Install-SoundDriver
                     PAUSE
                 }
-                '9' 
+                '9'
                 {
                     Reset-Program
                     PAUSE
                 }
-                default 
+                default
                 {
                     Write-Host "Invalid input. Please enter a valid option." -ForegroundColor Red
                 }
             }
             $exit = Read-Host "Do you want to exit? (Y/N)"
-            if ($exit -eq 'Y') 
+            if ($exit -eq 'Y')
             {
                 exit
             }
@@ -266,13 +265,13 @@ Try
             }
         }
     }
-    catch 
+    catch
     {
         $ErrorMessage = $_.Exception.Message
         Write-Host "Something went wrong. Error message: $ErrorMessage" -ForegroundColor Red
     }
 }
-Catch 
+Catch
 {
     Write-Host 'Error Detected!'
     Write-Host $Error[0].Exception
