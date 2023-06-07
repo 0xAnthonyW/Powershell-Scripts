@@ -172,7 +172,7 @@ Try
         if ($installType -eq "offline")
         {
             # Install Chrome offline
-            $chromeInstaller = "D:\Software\ChromeStandaloneSetup64.exe"
+            $chromeInstaller = "D:\Software\Current_Software\ChromeStandaloneSetup64.exe"
             if (Test-Path $chromeInstaller)
             {
                 # Install Chrome offline
