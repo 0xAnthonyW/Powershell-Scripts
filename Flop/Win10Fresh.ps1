@@ -1,4 +1,4 @@
-# Created By Anthony Walters
+# Created By Anthony
 # Win10Fresh v0.10.3
 # Run PowerShell as Admin.
 if (!([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator"))
