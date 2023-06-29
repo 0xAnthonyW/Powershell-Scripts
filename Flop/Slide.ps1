@@ -1,5 +1,5 @@
 # Created By Anthony
-# Slide V0.4.1
+# Slide V0.4.2
 # Run PowerShell as Admin.
 if (!([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator"))
 {
@@ -29,6 +29,9 @@ $UsernamePrefix = "STU"
 $GroupName = "Student"
 $PTaskName = "PassExpire"
 $AdminAccount = "admin"
+$mswordexe = "C:\Program Files\Microsoft Office\root\Office16\WINWORD.EXE"
+$mswordexe2 = "C:\Program Files (x86)\Microsoft Office\Office16\WINWORD.EXE"
+$mswordexe3 = "C:\Program Files\Microsoft Office\Office16\WINWORD.EXE"
 
 # Disable the "Turn off display after" and "Sleep after" settings for both power plans.
 powercfg -change -monitor-timeout-ac 0
@@ -212,11 +215,13 @@ else
             "Path2" = "HKLM:\SOFTWARE\WOW6432Node\Microsoft\Windows NT\CurrentVersion"
         }
         
-        function Get-DisplayVersion ($registryPath) {
+        function Get-DisplayVersion ($registryPath)
+        {
             $displayVersion = (Get-ItemProperty -Path $registryPath).DisplayVersion
             return $displayVersion
         }
         
+        # Checks if the Display Versions match and are 22H2
         function Get-DisplayVersions($registryPaths) 
         {
             $displayVersions = @{}
@@ -230,7 +235,8 @@ else
         }
         $displayVersions = Get-DisplayVersions -registryPaths $registryPaths
         
-        if (($displayVersions["Path1"] -ne $null) -and ($displayVersions["Path2"] -ne $null))
+        # Checks if the Display Versions match and are 22H2 and runs WindowsBlocker if they do
+        if (($null -ne $displayVersions["Path1"]) -and ($null -ne $displayVersions["Path2"]))
         {
             if ($displayVersions["Path1"] -ieq $displayVersions["Path2"] -and $displayVersions["Path1"] -ieq "22H2") 
             {
@@ -238,13 +244,57 @@ else
                 Start-Process Powershell -Wait "-ExecutionPolicy Bypass -File $WindowsBlocker"
                 Write-Host "WindowsBlocker is done." -ForegroundColor Green
             } 
-            elseif ($displayVersions["Path1"] -ieq $displayVersions["Path2"]) {
+            elseif ($displayVersions["Path1"] -ieq $displayVersions["Path2"])
+            {
                 Write-Host "Display Versions match but are not 22H2." -ForegroundColor Yellow
             }
-            else {
+            else
+            {
                 Write-Host "Display Versions Mismatch Detected. No further action needed" -ForegroundColor White
             }
         }
+
+        # Checks if MS Word is installed and creates a shortcut on the desktop        
+        if (Test-Path $mswordexe) 
+        {
+            Write-Host "MS Word is installed" -ForegroundColor Green
+            $shell = New-Object -ComObject WScript.Shell
+            #$shortcut = $shell.CreateShortcut("$env:USERPROFILE\Desktop\Word.lnk")
+            $shortcut1 = $shell.CreateShortcut("$env:USERPROFILE\..\Public\Desktop\Word 2016.lnk")
+            #$shortcut.TargetPath = $mswordexe
+            $shortcut1.TargetPath = $mswordexe
+            #$shortcut.Save()
+            $shortcut1.Save()
+        }
+        elseif (Test-Path $mswordexe2) 
+        {
+            Write-Host "MS Word is installed" -ForegroundColor Green
+            $shell = New-Object -ComObject WScript.Shell
+            #$shortcut = $shell.CreateShortcut("$env:USERPROFILE\Desktop\Word.lnk")
+            $shortcut1 = $shell.CreateShortcut("$env:USERPROFILE\..\Public\Desktop\Word 2016.lnk")
+            #$shortcut.TargetPath = $mswordexe2
+            $shortcut1.TargetPath = $mswordexe2
+            #$shortcut.Save()
+            $shortcut1.Save()
+        }
+        elseif (Test-Path $mswordexe3) 
+        {
+            Write-Host "MS Word is installed" -ForegroundColor Green
+            $shell = New-Object -ComObject WScript.Shell
+            #$shortcut = $shell.CreateShortcut("$env:USERPROFILE\Desktop\Word.lnk")
+            $shortcut1 = $shell.CreateShortcut("$env:USERPROFILE\..\Public\Desktop\Word 2016.lnk")
+            #$shortcut.TargetPath = $mswordexe3
+            $shortcut1.TargetPath = $mswordexe3
+            #$shortcut.Save()
+            $shortcut1.Save()
+        }
+        else 
+        {
+            # If MS Word is not installed, it will install it
+            Write-Host "MS Word is not installed" -ForegroundColor Yellow
+            Start-Process -FilePath "C:\Users\admin\Desktop\Software\Current_Software\Office2016Client\SYSMAN_Office_2016_V2.1.5.iso"
+        }
+        
 
         # Enable User Account Control (UAC) consent prompt.
         Set-ItemProperty -Path REGISTRY::HKEY_LOCAL_MACHINE\Software\Microsoft\Windows\CurrentVersion\Policies\System -Name ConsentPromptBehaviorAdmin -Value 5
