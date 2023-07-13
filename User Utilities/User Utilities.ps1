@@ -35,6 +35,7 @@ function Show-Menu
     Write-Host "8) Audio Driver"
     Write-Host "9) Reinstall Chrome"
     Write-Host "10) Lockdown Browser"
+    Write-Host ""
 }
 
 Try
