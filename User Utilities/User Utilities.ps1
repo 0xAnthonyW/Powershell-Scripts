@@ -1,5 +1,5 @@
 # Created By Anthony
-# User Utilities v1.2.5
+# User Utilities v1.2.6
 # This script is used to reset the password, time zone and network adapter for a user. It assumes the user has been granted the required permissions to execute the functions.
 # Run PowerShell as Admin.
 
@@ -7,6 +7,18 @@ if (!([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]:
 {
     Start-Process powershell.exe "-NoProfile -ExecutionPolicy Bypass -File `"$PSCommandPath`"" -Verb RunAs; exit
 }
+
+#Variables
+$UsbPath = 'D:\PassExpire'
+$Destination = 'C:\Users\admin\Desktop'
+$TaskPass = Join-Path $Destination 'TaskPasswordExpire.ps1'
+$PassExpirePath = Join-Path $Destination 'PassExpire'
+$passfilePath = Join-Path $Destination 'PasswordExpire.ps1'
+$taskfilePath = Join-Path $Destination 'TaskPasswordExpire.ps1'
+$user = (Get-LocalUser | Where-Object { $_.Name -like "STU*" }).Name
+$oldtaskexpire = Join-Path $Destination 'Task Password Expire.ps1'
+$PTaskName = "PassExpire"
+
 
 # Gets the student account
 $Student = (Get-LocalUser | Where-Object { $_.Name -like "STU*" }).Name
@@ -22,7 +34,7 @@ function Show-Menu
     Write-Host "7) Smart Card Driver"
     Write-Host "8) Audio Driver"
     Write-Host "9) Reinstall Chrome"
-    Write-Host ""
+    Write-Host "10) Lockdown Browser"
 }
 
 Try
@@ -36,6 +48,83 @@ Try
         # Resets the password of the user to 'Student'
         net user $Student "Student" /logonpasswordchg:yes
         Write-Host "Password for user $Student has been reset to 'Student' and set to user must change password at next login" -ForegroundColor Green
+        $promptpass = Read-Host -Prompt "Do you want to set passexpire script and scheduled task? (Y/N)"
+        if ($promptpass -eq "Y")
+        {
+            if (Test-Path $PassExpirePath) 
+            {
+                Write-Host "Removing existing $PassExpirePath..." -ForegroundColor Yellow
+                Remove-Item $PassExpirePath -Force -Recurse
+            }
+            Copy-Item $UsbPath -Destination $Destination -Force -Recurse
+            Get-ChildItem $Destination -Recurse | Select-Object -ExpandProperty FullName
+
+            # Copies PasswordExpire.ps1
+            if (!(Test-Path $passfilePath -PathType Leaf))
+            {
+                Write-Host "Copying PasswordExpire.ps1 to $Destination..." -ForegroundColor Green
+                Copy-Item (Join-Path $PassExpirePath 'PasswordExpire.ps1') $Destination -Force
+            }
+            else 
+            {
+                Write-Host "Removing existing $passfilePath..." -ForegroundColor Yellow
+                Remove-Item $passfilePath -Force -Recurse
+                Copy-Item (Join-Path $PassExpirePath 'PasswordExpire.ps1') $Destination -Force
+            }
+            # Checks for old task password expire file that has a space in the name
+            if (Test-Path $oldtaskexpire) 
+            {
+                Write-Host "Removing existing Old Task Password Expire" -ForegroundColor Yellow
+                Remove-Item -Path $oldtaskexpire -Force -Recurse
+            }
+            else
+            {
+                Write-Host "Old Task Password Expire file does not exist." -ForegroundColor Green
+            }
+            # Copies TaskPasswordExpire.ps1
+            if (!(Test-Path $taskfilePath -PathType Leaf))
+            {
+                Write-Host "Copying TaskPasswordExpire.ps1 to $Destination..." -ForegroundColor Green
+                Copy-Item (Join-Path $PassExpirePath 'TaskPasswordExpire.ps1') $Destination -Force
+            }
+            else 
+            {
+                Write-Host "Removing existing $taskfilePath..." -ForegroundColor Yellow
+                Remove-Item $taskfilePath -Force -Recurse
+                Copy-Item (Join-Path $PassExpirePath 'TaskPasswordExpire.ps1') $Destination -Force
+            }
+            # Removes PassExpire Desktop Folder
+            Remove-Item -Path $PassExpirePath -Recurse -Force
+            Write-Host "PassExpire Folder has been removed" -ForegroundColor Green
+            # Check if the scheduled task exists
+            $Task = Get-ScheduledTask -TaskName $PTaskName -ErrorAction SilentlyContinue
+
+            if ($Task)
+            {
+                # If the task exists, delete it
+                try
+                {
+                    Unregister-ScheduledTask -TaskName $PTaskName -Confirm:$false
+                    Write-Host "Task '$PTaskName' has been deleted." -ForegroundColor Green
+                }
+                catch
+                {
+                    Write-Host "Error: Unable to delete task '$PTaskName'." -ForegroundColor Red
+                    Read-Host "Press Enter to continue."
+                }
+            }
+            else
+            {
+                Write-Host "Task '$PTaskName' not found." -ForegroundColor Green
+            }
+            # Run the TaskPasswordExpire script.
+            Start-Process Powershell -Wait "-ExecutionPolicy Bypass -File $TaskPass"
+            Write-Host "Password Expire is done" -ForegroundColor Green
+        }
+        else 
+        {
+            Write-Host "Done"
+        }
     }
 
     # This function sets the Real Time Clock to 'Central Standard Time'
@@ -69,15 +158,28 @@ Try
         Start-Sleep -Seconds 4
         Restart-Computer -force
     }
-
+    
     function Install-SoundDriver
     {
-        # Install Sound Driver
-        $drivers = "D:\Drivers\sp102373 -Audio.exe"
-        Start-Process -FilePath $drivers -ArgumentList "/s" -Wait
-        Write-Output "Sound Driver Installed"
+        $drivers1 = "D:\Updates\HP830Drivers\sp135924 Audio.exe"
+        $drivers2 = "D:\Drivers\sp102373 -Audio.exe"
+    
+        if (Test-Path $drivers1) 
+        {
+            Start-Process -FilePath $drivers1 -ArgumentList "/s" -Wait
+            Write-Output "Sound Driver Installed from first path"
+        }
+        elseif (Test-Path $drivers2) 
+        {
+            Start-Process -FilePath $drivers2 -ArgumentList "/s" -Wait
+            Write-Output "Sound Driver Installed from second path"
+        }
+        else 
+        {
+            Write-Output "Failed to install sound driver: files not found at either path"
+        }
     }
-
+    
     function Add-User
     {
         #Get-CimInstance -Class Win32_UserProfile | Where-Object { $_.LocalPath.split('\')[-1] -like 'STU*' } | Remove-CimInstance
@@ -134,7 +236,7 @@ Try
         $opencert = Read-Host -Prompt "Do you want to open the Certficates? (Y/N)"
         if ($opencert -eq "Y")
         {
-            rundll32.exe shell32.dll,Control_RunDLL inetcpl.cpl,1,3
+            rundll32.exe shell32.dll, Control_RunDLL inetcpl.cpl, 1, 3
         }
         else
         {
@@ -192,84 +294,131 @@ Try
             Start-Process -FilePath "msiexec.exe" -ArgumentList "/i $chromeInstaller /quiet" -Wait
         }
     }
-    # The options menu provides the user with a choice of functions. Depending on the option chosen, the appropriate function is run.
-    Try
+    # LockDown Browser update
+    function Install-LockDownBrowser
     {
-        while ($true)
+        #Latest Version GUID RegKey Path and Value
+        $LatestLockDownPath = "HKLM:\SOFTWARE\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall\{1EB66099-8D2D-4E86-A9F2-127C7403C300}"
+    
+        if (Test-Path $LatestLockDownPath)
         {
-            Show-Menu
-            $userinput = Read-Host "Enter your choice"
-
-            switch ($userinput)
+            Write-Output "Latest LockDown Browser is Detected"
+            $DisplayVersionValue = (Get-ItemProperty -Path $LatestLockDownPath).DisplayVersion 
+            Write-Output "Installed version: $DisplayVersionValue"
+            $reinstall = Read-Host "Would you like to reinstall? (Y/N)" 
+            if ($reinstall -eq "Y")
             {
-                '1'
-                {
-                    Reset-Password $Student
-                    PAUSE
-                }
-                '2'
-                {
-                    Set-LocalUser -Name $Student -PasswordNeverExpires $True
-                    Write-Host "Password has been set to not expire" -ForegroundColor Green
-                    PAUSE
-                }
-                '3'
-                {
-                    Reset-TimeZone
-                    PAUSE
-                }
-                '4'
-                {
-                    Reset-NetworkAdapter
-                    PAUSE
-                }
-                '5'
-                {
-                    Add-User
-                    PAUSE
-                }
-                '6'
-                {
-                    Remove-User
-                    PAUSE
-                }
-                '7'
-                {
-                    Install-SmartCardDriver
-                    PAUSE
-                }
-                '8'
-                {
-                    Install-SoundDriver
-                    PAUSE
-                }
-                '9'
-                {
-                    Reset-Program
-                    PAUSE
-                }
-                default
-                {
-                    Write-Host "Invalid input. Please enter a valid option." -ForegroundColor Red
-                }
+                # Reinstall latest version
+                Start-Process msiexec.exe -Wait -ArgumentList '/i D:\Software\Current_Software\LockDown_Browser\Lockdown.msi /quiet /norestart'
+                Start-Sleep -Seconds 5
+                (Get-ItemProperty -Path $LatestLockDownPath).DisplayVersion
+                Write-Host "Done. Reinstall completed."
             }
-            $exit = Read-Host "Do you want to exit? (Y/N)"
-            if ($exit -eq 'Y')
+            else
             {
-                exit
+                Write-Host "Done. Nothing was done."
             }
-            else 
+        }
+        else
+        {
+            Write-Output "Latest LockDown Browser not detected. Starting installation..."
+            Start-Process msiexec.exe -Wait -ArgumentList '/i D:\Software\Current_Software\LockDown_Browser\Lockdown.msi /quiet /norestart'
+            Start-Sleep -Seconds 5
+            if (Test-Path $LatestLockDownPath)
             {
-                Clear-Host # Clear the console
-                # The options will be refreshed in the next iteration of the while loop
+                (Get-ItemProperty -Path $LatestLockDownPath).DisplayVersion
+                Write-Host "Done. Installation completed."
+            }
+            else
+            {
+                Write-Host "Installation failed. Please try again or check the installation path."
             }
         }
     }
-    catch
+    
+# The options menu provides the user with a choice of functions. Depending on the option chosen, the appropriate function is run.
+Try
+{
+    while ($true)
     {
-        $ErrorMessage = $_.Exception.Message
-        Write-Host "Something went wrong. Error message: $ErrorMessage" -ForegroundColor Red
+        Show-Menu
+        $userinput = Read-Host "Enter your choice"
+
+        switch ($userinput)
+        {
+            '1'
+            {
+                Reset-Password $Student
+                PAUSE
+            }
+            '2'
+            {
+                Set-LocalUser -Name $Student -PasswordNeverExpires $True
+                Write-Host "Password has been set to not expire" -ForegroundColor Green
+                PAUSE
+            }
+            '3'
+            {
+                Reset-TimeZone
+                PAUSE
+            }
+            '4'
+            {
+                Reset-NetworkAdapter
+                PAUSE
+            }
+            '5'
+            {
+                Add-User
+                PAUSE
+            }
+            '6'
+            {
+                Remove-User
+                PAUSE
+            }
+            '7'
+            {
+                Install-SmartCardDriver
+                PAUSE
+            }
+            '8'
+            {
+                Install-SoundDriver
+                PAUSE
+            }
+            '9'
+            {
+                Reset-Program
+                PAUSE
+            }
+            '10'
+            {
+                Install-LockDownBrowser
+                PAUSE
+            }
+            default
+            {
+                Write-Host "Invalid input. Please enter a valid option." -ForegroundColor Red
+            }
+        }
+        $exit = Read-Host "Do you want to exit? (Y/N)"
+        if ($exit -eq 'Y')
+        {
+            exit
+        }
+        else 
+        {
+            Clear-Host # Clear the console
+            # The options will be refreshed in the next iteration of the while loop
+        }
     }
+}
+catch
+{
+    $ErrorMessage = $_.Exception.Message
+    Write-Host "Something went wrong. Error message: $ErrorMessage" -ForegroundColor Red
+}
 }
 Catch
 {
