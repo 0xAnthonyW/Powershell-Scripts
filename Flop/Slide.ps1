@@ -1,5 +1,5 @@
 # Created By Anthony
-# Slide V0.4.2
+# Slide V0.4.3
 # Run PowerShell as Admin.
 if (!([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator"))
 {
@@ -168,6 +168,11 @@ else
         Start-Process Powershell -Wait "-ExecutionPolicy Bypass -File $TaskPass"
         Write-Host "Password Expire is done" -ForegroundColor Green
         Start-Sleep -Seconds 5
+
+        # Run the FlipMe script.
+        Start-Process Powershell -Wait "-ExecutionPolicy Bypass -File $flipme"
+        Write-Host "Flipping is done" -ForegroundColor Green
+
         # Check if the Student group exists, and create it if not
         try
         {
@@ -206,9 +211,6 @@ else
         Start-Process -FilePath "C:\Windows\System32\cmd.exe" -verb runas -ArgumentList { /c rd /s /q c:\$Recycle.bin }
         Write-host "Recyclebin Cleared" -ForegroundColor Green
         
-        # Run the FlipMe script.
-        Start-Process Powershell -Wait "-ExecutionPolicy Bypass -File $flipme"
-        Write-Host "Flipping is done" -ForegroundColor Green
         # Checks the Version of Windows if its 22H2
         $registryPaths = @{
             "Path1" = "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion";
