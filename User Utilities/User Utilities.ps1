@@ -1,5 +1,5 @@
 # Created By Anthony
-# User Utilities v1.2.6
+# User Utilities v1.2.8
 # This script is used to reset the password, time zone and network adapter for a user. It assumes the user has been granted the required permissions to execute the functions.
 # Run PowerShell as Admin.
 
@@ -35,7 +35,6 @@ function Show-Menu
     Write-Host "8) Audio Driver"
     Write-Host "9) Reinstall Chrome"
     Write-Host "10) Lockdown Browser"
-    Write-Host ""
 }
 
 Try
@@ -298,128 +297,193 @@ Try
     # LockDown Browser update
     function Install-LockDownBrowser
     {
-        #Latest Version GUID RegKey Path and Value
-        $LatestLockDownPath = "HKLM:\SOFTWARE\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall\{1EB66099-8D2D-4E86-A9F2-127C7403C300}"
-    
-        if (Test-Path $LatestLockDownPath)
+        #Lockdown Browser
+        $OldLockdownPath = "C:\Program Files (x86)\Respondus\LockDown Browser Lab"
+        $Lockdown2Path = "D:\Software\Lockdown Browser\LockDownBrowserLab-2-1-0-01.zip"
+        $LockdownDestinationPath = "C:\Program Files (x86)\Respondus\LockDown Browser Lab 2"
+        $Lockdown2ExePath = "C:\Program Files (x86)\Respondus\LockDown Browser Lab 2\LockDownBrowserLab-2-1-0-01\LockDownBrowserLab.exe"
+
+        # Respondus® LockDown Browser
+        if (!(Test-Path $OldLockdownPath))
         {
-            Write-Output "Latest LockDown Browser is Detected"
-            $DisplayVersionValue = (Get-ItemProperty -Path $LatestLockDownPath).DisplayVersion 
-            Write-Output "Installed version: $DisplayVersionValue"
-            $reinstall = Read-Host "Would you like to reinstall? (Y/N)" 
-            if ($reinstall -eq "Y")
-            {
-                # Reinstall latest version
-                Start-Process msiexec.exe -Wait -ArgumentList '/i D:\Software\Current_Software\LockDown_Browser\Lockdown.msi /quiet /norestart'
-                Start-Sleep -Seconds 5
-                (Get-ItemProperty -Path $LatestLockDownPath).DisplayVersion
-                Write-Host "Done. Reinstall completed."
-            }
-            else
-            {
-                Write-Host "Done. Nothing was done."
-            }
+            Write-Host "Installing Respondus® LockDown Browser..." -ForegroundColor Red
+            Start-Process msiexec.exe -Wait -ArgumentList '/i C:\Users\Admin\Desktop\Software\Current_Software\LockDown_Browser\Lockdown.msi /quiet /norestart'
+            Write-Host "Installed Respondus® LockDown Browser" -ForegroundColor Green
         }
         else
         {
-            Write-Output "Latest LockDown Browser not detected. Starting installation..."
-            Start-Process msiexec.exe -Wait -ArgumentList '/i D:\Software\Current_Software\LockDown_Browser\Lockdown.msi /quiet /norestart'
-            Start-Sleep -Seconds 5
-            if (Test-Path $LatestLockDownPath)
+            Write-Host "Respondus® LockDown Browser is already installed." -ForegroundColor Green
+        }
+        Start-Sleep -Seconds 5
+        #Delete old shortcut
+        $ShortcutPath = "$env:USERPROFILE\Desktop\LockDown Browser 2 Lab.lnk"
+        if (Test-Path $ShortcutPath)
+        {
+            Remove-Item $ShortcutPath -Force
+        }
+        else
+        {
+            Write-Host "Shortcut not found on user's desktop."
+        }
+        Start-Sleep -Seconds 5
+        $ShortcutPath1 = "C:\ProgramData\Microsoft\Windows\Start Menu\Programs\Respondus\LockDown Browser 2 Lab.lnk"
+        if (Test-Path $ShortcutPath1)
+        {
+            Remove-Item $ShortcutPath1 -Force
+            Write-Host "Second Shortcut successfully deleted."
+        }
+        else
+        {
+            Write-Host "Second Shortcut not found at the specified location."
+        }
+
+        Start-Sleep -Seconds 5
+        $PublicDesktopPath = [System.Environment]::GetFolderPath([System.Environment+SpecialFolder]::CommonDesktopDirectory)
+        $ShortcutPath = "$PublicDesktopPath\LockDown Browser 2 Lab.lnk"
+        if (Test-Path $ShortcutPath)
+        {
+            Remove-Item $ShortcutPath -Force
+        }
+        else
+        {
+            Write-Host "Shortcut not found on public desktop."
+        }
+
+        # Respondus® LockDown Browser 2
+        if (!(Test-Path $Lockdown2ExePath))
+        {
+            Write-Host "Installing Respondus® LockDown Browser..." -ForegroundColor Red
+    
+            # Ensure the destination directory exists
+            if (-not (Test-Path $LockdownDestinationPath))
             {
-                (Get-ItemProperty -Path $LatestLockDownPath).DisplayVersion
-                Write-Host "Done. Installation completed."
+                New-Item -ItemType Directory -Path $LockdownDestinationPath
+            }
+
+            # copy the zip to $LockdownDestinationPath
+            Copy-Item -Path $Lockdown2Path -Destination $LockdownDestinationPath
+            Start-Sleep -Seconds 5
+
+            # unzip the zip
+            $ZipDestination = Join-Path $LockdownDestinationPath "LockDownBrowserLab-2-1-0-01.zip"
+            if (Test-Path $ZipDestination)
+            {
+                Expand-Archive -Path $ZipDestination -DestinationPath $LockdownDestinationPath
+                Start-Sleep -Seconds 5
+
+                # delete the zip
+                Remove-Item -Path $ZipDestination
+                Start-Sleep -Seconds 5
             }
             else
             {
-                Write-Host "Installation failed. Please try again or check the installation path."
+                Write-Host "Failed to copy the ZIP file." -ForegroundColor Red
             }
+
+            # Create Desktop Shortcut for Lockdown Browser
+            $shell = New-Object -ComObject WScript.Shell
+            $shortcut2 = $shell.CreateShortcut("$env:USERPROFILE\..\Public\Desktop\LockDown Browser Lab 2.lnk")
+            $shortcut2.TargetPath = $Lockdown2ExePath
+            $shortcut2.Save()
+            Write-Host "Installed Respondus® LockDown Browser 2" -ForegroundColor Green
+
+            $StartMenuPath = "C:\ProgramData\Microsoft\Windows\Start Menu\Programs\Respondus LockDown Browser 2 Lab.lnk"
+            $shell2 = New-Object -ComObject WScript.Shell
+            $Shortcut3 = $shell2.CreateShortcut($StartMenuPath)
+            $Shortcut3.TargetPath = $Lockdown2ExePath
+            $Shortcut3.Save()
+
+            Write-Host "Created shortcut for Respondus® LockDown Browser 2" -ForegroundColor Green
+        }
+        else
+        {
+            Write-Host "Respondus® LockDown Browser is already installed." -ForegroundColor Green
         }
     }
     
-# The options menu provides the user with a choice of functions. Depending on the option chosen, the appropriate function is run.
-Try
-{
-    while ($true)
+    # The options menu provides the user with a choice of functions. Depending on the option chosen, the appropriate function is run.
+    Try
     {
-        Show-Menu
-        $userinput = Read-Host "Enter your choice"
+        while ($true)
+        {
+            Show-Menu
+            $userinput = Read-Host "Enter your choice"
 
-        switch ($userinput)
-        {
-            '1'
+            switch ($userinput)
             {
-                Reset-Password $Student
-                PAUSE
+                '1'
+                {
+                    Reset-Password $Student
+                    PAUSE
+                }
+                '2'
+                {
+                    Set-LocalUser -Name $Student -PasswordNeverExpires $True
+                    Write-Host "Password has been set to not expire" -ForegroundColor Green
+                    PAUSE
+                }
+                '3'
+                {
+                    Reset-TimeZone
+                    PAUSE
+                }
+                '4'
+                {
+                    Reset-NetworkAdapter
+                    PAUSE
+                }
+                '5'
+                {
+                    Add-User
+                    PAUSE
+                }
+                '6'
+                {
+                    Remove-User
+                    PAUSE
+                }
+                '7'
+                {
+                    Install-SmartCardDriver
+                    PAUSE
+                }
+                '8'
+                {
+                    Install-SoundDriver
+                    PAUSE
+                }
+                '9'
+                {
+                    Reset-Program
+                    PAUSE
+                }
+                '10'
+                {
+                    Install-LockDownBrowser
+                    PAUSE
+                }
+                default
+                {
+                    Write-Host "Invalid input. Please enter a valid option." -ForegroundColor Red
+                }
             }
-            '2'
+            $exit = Read-Host "Do you want to exit? (Y/N)"
+            if ($exit -eq 'Y')
             {
-                Set-LocalUser -Name $Student -PasswordNeverExpires $True
-                Write-Host "Password has been set to not expire" -ForegroundColor Green
-                PAUSE
+                exit
             }
-            '3'
+            else 
             {
-                Reset-TimeZone
-                PAUSE
+                Clear-Host # Clear the console
+                # The options will be refreshed in the next iteration of the while loop
             }
-            '4'
-            {
-                Reset-NetworkAdapter
-                PAUSE
-            }
-            '5'
-            {
-                Add-User
-                PAUSE
-            }
-            '6'
-            {
-                Remove-User
-                PAUSE
-            }
-            '7'
-            {
-                Install-SmartCardDriver
-                PAUSE
-            }
-            '8'
-            {
-                Install-SoundDriver
-                PAUSE
-            }
-            '9'
-            {
-                Reset-Program
-                PAUSE
-            }
-            '10'
-            {
-                Install-LockDownBrowser
-                PAUSE
-            }
-            default
-            {
-                Write-Host "Invalid input. Please enter a valid option." -ForegroundColor Red
-            }
-        }
-        $exit = Read-Host "Do you want to exit? (Y/N)"
-        if ($exit -eq 'Y')
-        {
-            exit
-        }
-        else 
-        {
-            Clear-Host # Clear the console
-            # The options will be refreshed in the next iteration of the while loop
         }
     }
-}
-catch
-{
-    $ErrorMessage = $_.Exception.Message
-    Write-Host "Something went wrong. Error message: $ErrorMessage" -ForegroundColor Red
-}
+    catch
+    {
+        $ErrorMessage = $_.Exception.Message
+        Write-Host "Something went wrong. Error message: $ErrorMessage" -ForegroundColor Red
+    }
 }
 Catch
 {
