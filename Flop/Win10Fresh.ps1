@@ -1,5 +1,5 @@
 # Created By Anthony
-# Win10Fresh v0.10.3
+# Win10Fresh v0.10.4
 # Run PowerShell as Admin.
 if (!([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator"))
 {
@@ -42,8 +42,6 @@ $software = 'D:\Software'
 $softwareDestination = 'C:\Users\admin\Desktop\Software'
 $updates = 'D:\Updates'
 $updatesDestination = 'C:\Users\admin\Desktop\Updates'
-$Drivers = 'C:\Users\admin\Desktop\Updates\Scripts\830Drivers.bat'
-$MSU = 'C:\Users\admin\Desktop\Updates\Scripts\MSU.ps1'
 $WindowsBlocker = 'D:\Win11Blocker\WindowsBlocker.ps1'
 $AdminAccount = "admin"
 
