@@ -1,5 +1,5 @@
 # Created By Anthony
-# Slide V0.4.3
+# Slide V0.4.4
 # Run PowerShell as Admin.
 if (!([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator"))
 {
@@ -300,7 +300,7 @@ else
 
         # Enable User Account Control (UAC) consent prompt.
         Set-ItemProperty -Path REGISTRY::HKEY_LOCAL_MACHINE\Software\Microsoft\Windows\CurrentVersion\Policies\System -Name ConsentPromptBehaviorAdmin -Value 5
-        Read-Host "UAC Enabled Press Enter to Exit"
+        Write-Host "UAC Enabled"
         
         # Set the "Turn off display after" and "Sleep after" settings to 10 minutes for the "Plugged in" power plan, and 5 minutes for the "On battery" power plan.
         powercfg -change -monitor-timeout-ac 10
@@ -310,7 +310,18 @@ else
 
         #Sets brightness to 100%
         (Get-WmiObject -Namespace root/WMI -Class WmiMonitorBrightnessMethods).WmiSetBrightness(1, 100)
-        Read-Host "All done press enter to exit"
+        $signout = Read-Host "All done. Press Enter to sign out or type any key to exit without signing out."
+
+        # Auto Sign out the current user.
+        if (-not $signout) 
+        {
+            Write-Host "Signing out..." -ForegroundColor Green
+            Shutdown.exe /l
+        }
+        else 
+        {
+            Write-Host "Not signing out..." -ForegroundColor Red
+        }        
     }
 }
 
