@@ -1,5 +1,5 @@
-# Created By Anthony
-# Win10Fresh v0.10.4
+# Created By Anthony Walters
+# Win10Fresh v0.10.5
 # Run PowerShell as Admin.
 if (!([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator"))
 {
@@ -45,14 +45,25 @@ $updatesDestination = 'C:\Users\admin\Desktop\Updates'
 $WindowsBlocker = 'D:\Win11Blocker\WindowsBlocker.ps1'
 $AdminAccount = "admin"
 
-# UserAccount
-$studentAccount = Read-host "Enter Student Account Name"
-$StuPassword = "Student" | ConvertTo-SecureString -AsPlainText -Force
-New-LocalUser -Name "$studentAccount" -Description "$studentAccount" -Password $StuPassword -Verbose
-Add-LocalGroupMember -Group "Users" -Member "$studentAccount"
-Set-LocalUser -Name "$studentAccount"
-net user $studentAccount /logonpasswordchg:yes
-Start-Sleep -Seconds 10
+while ($true) {
+    # UserAccount
+    $studentAccount = Read-host "Enter Student Account Name"
+
+    # Confirm before proceeding
+    $confirmation = Read-Host "Are you sure you want to create the account for $studentAccount? (Y/N)"
+
+    if ($confirmation -eq 'Y' -or $confirmation -eq 'y') {
+        $StuPassword = "Student" | ConvertTo-SecureString -AsPlainText -Force
+        New-LocalUser -Name "$studentAccount" -Description "$studentAccount" -Password $StuPassword -Verbose
+        Add-LocalGroupMember -Group "Users" -Member "$studentAccount"
+        Set-LocalUser -Name "$studentAccount"
+        net user $studentAccount /logonpasswordchg:yes
+        Start-Sleep -Seconds 10
+        break # Exit the loop once the account is created
+    } else {
+        Write-Host "Account creation cancelled. Let's try again."
+    }
+}
 
 # Sets the administrator account password to never expire.
 Set-LocalUser -Name $AdminAccount  -PasswordNeverExpires $True
