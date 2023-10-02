@@ -1,4 +1,4 @@
-# Created By Anthony Walters
+# Created By Anthony
 # Win10Fresh v0.10.5
 # Run PowerShell as Admin.
 if (!([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator"))
@@ -19,12 +19,36 @@ powercfg -change -standby-timeout-dc 0
 #Sets brightness to 100%
 (Get-WmiObject -Namespace root/WMI -Class WmiMonitorBrightnessMethods).WmiSetBrightness(1, 100)
 
+# Needs Testing **
+# Get a list of all volumes on the system
+# Check if 'ESD-USB' is assigned to D:
+$esdVolume = Get-Volume | Where-Object { $_.FileSystemLabel -eq 'ESD-USB' }
+
+if ($esdVolume.DriveLetter -ne 'D') {
+    
+    # Unmount any volume currently assigned to D:
+    $dVolume = Get-Volume | Where-Object { $_.DriveLetter -eq 'D' }
+    if ($dVolume) {
+        $diskpartScript = @"
+select volume D
+remove letter=D
+"@
+        $diskpartScript | diskpart
+    }
+    
+    # Assign 'ESD-USB' to D:
+    $diskpartScript = @"
+select volume $($esdVolume.DriveLetter)
+assign letter=D
+"@
+    $diskpartScript | diskpart
+}
+
 # Get a list of all volumes on the system
 $volumes = Get-Volume | Where-Object { $_.FileSystemLabel -eq 'UEFI_NTFS' }
 
 foreach ($volume in $volumes) {
     $driveLetter = $volume.DriveLetter
-    $volumePath = "${driveLetter}:"
     $diskpartScript = @"
 select volume $driveLetter
 remove letter=$driveLetter
