@@ -19,6 +19,18 @@ powercfg -change -standby-timeout-dc 0
 #Sets brightness to 100%
 (Get-WmiObject -Namespace root/WMI -Class WmiMonitorBrightnessMethods).WmiSetBrightness(1, 100)
 
+try {
+    # Rename 'ESD-ISO' to 'ESD-USB'
+    $volumeToRename = Get-Volume | Where-Object { $_.FileSystemLabel -eq 'ESD-ISO' }
+    if ($volumeToRename) {
+        Set-Volume -DriveLetter $volumeToRename.DriveLetter -NewFileSystemLabel 'ESD-USB'
+    }
+} catch {
+    # Log the error or just silently continue
+
+    Write-Host "An error occurred: $_. Exception type: $($_.GetType().FullName)"
+}
+
 # Get a list of all volumes on the system
 # Check if 'ESD-USB' is assigned to D:
 $esdVolume = Get-Volume | Where-Object { $_.FileSystemLabel -eq 'ESD-USB' }
@@ -73,7 +85,7 @@ while ($true) {
     $studentAccount = Read-host "Enter Student Account Name"
 
     # Confirm before proceeding
-    $confirmation = Read-Host "Are you sure you want to create the account for $studentAccount? (Y/N)"
+    $confirmation = Read-Host "Are you sure you want to create the account for '$studentAccount'? (Y/N)"
 
     if ($confirmation -eq 'Y' -or $confirmation -eq 'y') {
         $StuPassword = "Student" | ConvertTo-SecureString -AsPlainText -Force
