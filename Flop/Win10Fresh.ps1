@@ -19,7 +19,6 @@ powercfg -change -standby-timeout-dc 0
 #Sets brightness to 100%
 (Get-WmiObject -Namespace root/WMI -Class WmiMonitorBrightnessMethods).WmiSetBrightness(1, 100)
 
-# Needs Testing **
 # Get a list of all volumes on the system
 # Check if 'ESD-USB' is assigned to D:
 $esdVolume = Get-Volume | Where-Object { $_.FileSystemLabel -eq 'ESD-USB' }
