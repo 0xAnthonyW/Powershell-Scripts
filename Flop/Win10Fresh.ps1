@@ -19,15 +19,18 @@ powercfg -change -standby-timeout-dc 0
 #Sets brightness to 100%
 (Get-WmiObject -Namespace root/WMI -Class WmiMonitorBrightnessMethods).WmiSetBrightness(1, 100)
 
-try {
+try
+{
     # Rename 'ESD-ISO' to 'ESD-USB'
     $volumeToRename = Get-Volume | Where-Object { $_.FileSystemLabel -eq 'ESD-ISO' }
-    if ($volumeToRename) {
+    if ($volumeToRename)
+    {
         Set-Volume -DriveLetter $volumeToRename.DriveLetter -NewFileSystemLabel 'ESD-USB'
     }
-} catch {
+}
+catch
+{
     # Log the error or just silently continue
-
     Write-Host "An error occurred: $_. Exception type: $($_.GetType().FullName)"
 }
 
@@ -35,11 +38,13 @@ try {
 # Check if 'ESD-USB' is assigned to D:
 $esdVolume = Get-Volume | Where-Object { $_.FileSystemLabel -eq 'ESD-USB' }
 
-if ($esdVolume.DriveLetter -ne 'D') {
+if ($esdVolume.DriveLetter -ne 'D')
+{
     
     # Unmount any volume currently assigned to D:
     $dVolume = Get-Volume | Where-Object { $_.DriveLetter -eq 'D' }
-    if ($dVolume) {
+    if ($dVolume)
+    {
         $diskpartScript = @"
 select volume D
 remove letter=D
@@ -58,7 +63,8 @@ assign letter=D
 # Get a list of all volumes on the system
 $volumes = Get-Volume | Where-Object { $_.FileSystemLabel -eq 'UEFI_NTFS' }
 
-foreach ($volume in $volumes) {
+foreach ($volume in $volumes)
+{
     $driveLetter = $volume.DriveLetter
     $diskpartScript = @"
 select volume $driveLetter
@@ -69,10 +75,13 @@ remove letter=$driveLetter
 
 # Set up some variables for the script.
 $TaskPass = 'C:\Users\admin\Desktop\TaskPasswordExpire.ps1'
+$TaskRTC = 'C:\Users\admin\Desktop\TaskRTC.ps1'
 $flipme = 'C:\Users\admin\Desktop\Software\FlipMe.ps1'
 $UsbPath = 'D:\PassExpire'
+$RTCPath = 'D:\RTC'
 $Destination = 'C:\Users\admin\Desktop'
 $PassExpirePath = 'C:\Users\admin\Desktop\PassExpire'
+$RealTimeClockPath = 'C:\Users\admin\Desktop\RTC'
 $software = 'D:\Software'
 $softwareDestination = 'C:\Users\admin\Desktop\Software'
 $updates = 'D:\Updates'
@@ -80,14 +89,16 @@ $updatesDestination = 'C:\Users\admin\Desktop\Updates'
 $WindowsBlocker = 'D:\Win11Blocker\WindowsBlocker.ps1'
 $AdminAccount = "admin"
 
-while ($true) {
+while ($true)
+{
     # UserAccount
     $studentAccount = Read-host "Enter Student Account Name"
 
     # Confirm before proceeding
-    $confirmation = Read-Host "Are you sure you want to create the account for '$studentAccount'? (Y/N)"
+    $confirmation = Read-Host "Are you sure you want to create the account for $studentAccount? (Y/N)"
 
-    if ($confirmation -eq 'Y' -or $confirmation -eq 'y') {
+    if ($confirmation -eq 'Y' -or $confirmation -eq 'y')
+    {
         $StuPassword = "Student" | ConvertTo-SecureString -AsPlainText -Force
         New-LocalUser -Name "$studentAccount" -Description "$studentAccount" -Password $StuPassword -Verbose
         Add-LocalGroupMember -Group "Users" -Member "$studentAccount"
@@ -95,7 +106,9 @@ while ($true) {
         net user $studentAccount /logonpasswordchg:yes
         Start-Sleep -Seconds 10
         break # Exit the loop once the account is created
-    } else {
+    }
+    else
+    {
         Write-Host "Account creation cancelled. Let's try again."
     }
 }
@@ -141,7 +154,8 @@ $driverPaths = @(
     "D:\Updates\HP830Drivers\sp99654 - Ethernet.exe"
 )
 
-foreach ($driverPath in $driverPaths) {
+foreach ($driverPath in $driverPaths)
+{
     Write-Host "Installing $driverPath"
     Start-Process -FilePath "$driverPath" -ArgumentList "/s" -Wait -NoNewWindow
 }
@@ -151,14 +165,82 @@ Write-Host "All drivers installed" -ForegroundColor Green
 # Updates
 $UpdatePath = "C:\Users\Admin\Desktop\Updates\MSU"
 
-$Updates = Get-ChildItem -Path $UpdatePath -Recurse | Where-Object {$_.Name -like "*msu*"}
+$Updates = Get-ChildItem -Path $UpdatePath -Recurse | Where-Object { $_.Name -like "*msu*" }
 
-ForEach ($update in $Updates) {
-$UpdateFilePath = $update.FullName
-write-host "Installing update $($update.BaseName)"
-Start-Process -wait wusa -ArgumentList "/update $UpdateFilePath","/quiet","/norestart"
+ForEach ($update in $Updates)
+{
+    $UpdateFilePath = $update.FullName
+    write-host "Installing update $($update.BaseName)"
+    Start-Process -wait wusa -ArgumentList "/update $UpdateFilePath", "/quiet", "/norestart"
 }
 Write-Host "Updates installed" -ForegroundColor Green
+
+# UpdateCabs
+$updatecab = "D:\Updates\CABS"
+
+$updatecabs = @(
+    "D:\Updates\CABS\windows10.0-kb5001716-x64_af2a11098441f139526b0fd085ed3ac8a5a196f0.cab"
+)
+
+foreach ($updatecab in $updatecabs)
+{
+    Write-Host "Installing $updatecab"
+    # Installs Cab using the -Online parameter because it means that the package is installed on the running operating system. 
+    Start-Process -FilePath "powershell.exe" -ArgumentList "-NoProfile -Command Add-WindowsPackage -Online -PackagePath $updatecab"
+}
+
+Write-Host "All updatecabs installed" -ForegroundColor Green
+
+# Function to install driver from INF file
+Function Install-Driver
+{
+    param (
+        [string]$infFile
+    )
+    pnputil /add-driver $infFile /install
+}
+
+# Define the root directory containing the driver folders
+$rootDir = "D:\Updates\Manual Driver"
+
+# Get all subdirectories under the root directory
+$directories = Get-ChildItem -Path $rootDir -Directory
+
+# Iterate through each subdirectory
+foreach ($dir in $directories)
+{
+    # Get the INF file in the current subdirectory
+    $infFile = Get-ChildItem -Path $dir.FullName -Recurse -Filter *.inf
+    
+    # If an INF file is found, install the driver
+    if ($infFile)
+    {
+        # In case there are multiple INF files, this loop will handle them
+        foreach ($file in $infFile)
+        {
+            Write-Host "Installing driver from $($file.FullName)" -ForegroundColor Green
+            Install-Driver -infFile $file.FullName
+        }
+    }
+    else
+    {
+        Write-Host "No INF file found in $($dir.FullName)" -ForegroundColor Red
+    }
+}
+
+# Define the directory containing the executable files
+$exeDir = "D:\Updates\MISC"
+
+# Get all executable files in the directory
+$exeFiles = Get-ChildItem -Path $exeDir -Filter *.exe
+
+# Iterate through each executable file
+foreach ($exeFile in $exeFiles) {
+    Write-Host "Installing $($exeFile.Name)" -ForegroundColor Green
+    # Start the executable with the /s switch for silent installation
+    Start-Process -FilePath $exeFile.FullName -ArgumentList "/s" -NoNewWindow -Wait
+}
+
 
 # Pass Expire
 if (Test-Path $PassExpirePath) 
@@ -180,6 +262,30 @@ Remove-Item -Path $PassExpirePath -Recurse
 # TaskPasswordExpire
 Start-Process Powershell -Wait "-ExecutionPolicy Bypass -File $TaskPass"
 Start-Sleep -Seconds 4
+
+# RealTimeClock Expire
+if (Test-Path $RealTimeClockPath) 
+{
+    Remove-Item -Path $RealTimeClockPath -Force -Recurse
+    Copy-Item -Path $RTCPath -Recurse -Destination $Destination
+    (Get-ChildItem $Destination -Recurse).FullName
+}
+else
+{
+    Copy-Item -Path $RTCPath -Recurse -Destination $Destination
+    (Get-ChildItem $Destination -Recurse).FullName
+}
+Start-Sleep -Seconds 5
+Move-Item -Path 'C:\Users\admin\Desktop\RTC\RTC.ps1' -Destination $Destination 
+Move-Item -Path 'C:\Users\admin\Desktop\RTC\RTC.xml' -Destination $Destination
+Move-Item -Path 'C:\Users\admin\Desktop\RTC\TaskRTC.ps1' -Destination $Destination 
+Remove-Item -Path $RTCPath -Recurse
+
+Start-Process Powershell -Wait "-ExecutionPolicy Bypass -File $TaskRTC"
+Write-Host "TaskRTC has been created" -ForegroundColor Green
+Start-Sleep -Seconds 4
+Remove-Item -Path 'C:\Users\admin\Desktop\RTC\RTC.xml' -Force
+Write-Host "TaskRTC.xml has been removed"  -ForegroundColor Green
 
 # Flip Me
 Start-Process Powershell -Wait "-ExecutionPolicy Bypass -File $flipme"

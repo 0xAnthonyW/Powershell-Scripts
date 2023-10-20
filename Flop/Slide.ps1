@@ -1,5 +1,5 @@
 # Created By Anthony
-# Slide V0.4.4
+# Slide V0.4.5
 # Run PowerShell as Admin.
 if (!([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator"))
 {
@@ -10,15 +10,21 @@ Set-ItemProperty -Path REGISTRY::HKEY_LOCAL_MACHINE\Software\Microsoft\Windows\C
 Write-Host "UAC DISABLED"
 
 # Set up some variables for the script.
+$Destination = 'C:\Users\admin\Desktop'
 $UsbPath = 'D:\PassExpire'
+$RTCPath = 'D:\RealTimeClock'
 $WindowsBlocker = 'D:\Win11Blocker\WindowsBlocker.ps1'
 $software = 'D:\Software'
-$Destination = 'C:\Users\admin\Desktop'
 $TaskPass = Join-Path $Destination 'TaskPasswordExpire.ps1'
+$TaskRTC = Join-Path $Destination 'TaskRTC.ps1'
 $flipme = Join-Path $Destination 'Software\FlipMe.ps1'
 $PassExpirePath = Join-Path $Destination 'PassExpire'
+$RealTimeClockPath = Join-Path $Destination 'RealTimeClock'
 $passfilePath = Join-Path $Destination 'PasswordExpire.ps1'
+$rtcfilePath = Join-Path $Destination 'RTC.ps1'
 $taskfilePath = Join-Path $Destination 'TaskPasswordExpire.ps1'
+$taskRTCfilePath = Join-Path $Destination 'TaskRTC.ps1'
+$RTCXML = Join-Path $Destination 'RealTimeClock.xml'
 $softwareDestination = Join-Path $Destination 'Software'
 $user = (Get-LocalUser | Where-Object { $_.Name -like "STU*" }).Name
 $exePath = "C:\Users\$user\`Wavesor Software`\SWUpdater\SWUpdater.exe"
@@ -28,6 +34,7 @@ $oldtaskexpire = Join-Path $Destination 'Task Password Expire.ps1'
 $UsernamePrefix = "STU"
 $GroupName = "Student"
 $PTaskName = "PassExpire"
+$RTCTaskName = "RTC"
 $AdminAccount = "admin"
 $mswordexe = "C:\Program Files\Microsoft Office\root\Office16\WINWORD.EXE"
 $mswordexe2 = "C:\Program Files (x86)\Microsoft Office\Office16\WINWORD.EXE"
@@ -168,6 +175,86 @@ else
         Start-Process Powershell -Wait "-ExecutionPolicy Bypass -File $TaskPass"
         Write-Host "Password Expire is done" -ForegroundColor Green
         Start-Sleep -Seconds 5
+
+        # Remove and replace RealTimeClock folder with copy from USB
+        if (Test-Path $RealTimeClockPath) 
+        {
+            Write-Host "Removing existing $RealTimeClockPath..." -ForegroundColor Yellow
+            Remove-Item $RealTimeClockPath -Force -Recurse
+        }
+        Copy-Item $RTCPath -Destination $Destination -Force -Recurse
+        Get-ChildItem $Destination -Recurse | Select-Object -ExpandProperty FullName
+
+        # Copies RTC.ps1
+        if (!(Test-Path $rtcfilePath -PathType Leaf))
+        {
+            Write-Host "Copying RTC.ps1 to $Destination..." -ForegroundColor Green
+            Copy-Item (Join-Path $RealTimeClockPath 'RTC.ps1') $Destination -Force
+        }
+        else 
+        {
+            Write-Host "Removing existing $rtcfilePath..." -ForegroundColor Yellow
+            Remove-Item $rtcfilePath -Force -Recurse
+            Copy-Item (Join-Path $RealTimeClockPath 'RTC.ps1') $Destination -Force
+        }
+        # Copies RTC.XML
+        if (!(Test-Path $RTCXML -PathType Leaf))
+        {
+            Write-Host "Copying RTC.XML to $Destination..." -ForegroundColor Green
+            Copy-Item (Join-Path $RealTimeClockPath 'RTC.XML') $Destination -Force
+        }
+        else 
+        {
+            Write-Host "Removing existing $RTCXML..." -ForegroundColor Yellow
+            Remove-Item $RTCXML -Force -Recurse
+            Copy-Item (Join-Path $RealTimeClockPath 'RTC.XML') $Destination -Force
+        }
+
+        # Copies TaskRTC.ps1
+        if (!(Test-Path $taskRTCfilePath -PathType Leaf))
+        {
+            Write-Host "Copying TaskRTC.ps1 to $Destination..." -ForegroundColor Green
+            Copy-Item (Join-Path $RealTimeClockPath 'TaskRTC.ps1') $Destination -Force
+        }
+        else 
+        {
+            Write-Host "Removing existing $taskRTCfilePath..." -ForegroundColor Yellow
+            Remove-Item $taskRTCfilePath -Force -Recurse
+            Copy-Item (Join-Path $RealTimeClockPath 'TaskRTC.ps1') $Destination -Force
+        }
+
+        # Removes RealTimeClock Desktop Folder
+        Remove-Item -Path $RealTimeClockPath -Recurse -Force
+        Write-Host "RealTimeClock Folder has been removed" -ForegroundColor Green
+
+        # Check if the scheduled task exists
+        $Task = Get-ScheduledTask -TaskName $RTCTaskName -ErrorAction SilentlyContinue
+
+        if ($Task)
+        {
+            # If the task exists, delete it
+            try
+            {
+                Unregister-ScheduledTask -TaskName $RTCTaskName -Confirm:$false
+                Write-Host "Task '$RTCTaskName' has been deleted." -ForegroundColor Green
+            }
+            catch
+            {
+                Write-Host "Error: Unable to delete task '$RTCTaskName'." -ForegroundColor Red
+                Read-Host "Press Enter to continue."
+            }
+        }
+        else
+        {
+            Write-Host "Task '$RTCTaskName' not found." -ForegroundColor Green
+        }
+
+        # Run the TaskRTC script.
+        Start-Process Powershell -Wait "-ExecutionPolicy Bypass -File $TaskRTC"
+        Remove-Item -Path (Join-Path $Destination 'RTC.XML') -Force -Recurse
+        Write-Host "Real Time Clock is done" -ForegroundColor Green
+        Start-Sleep -Seconds 5
+
 
         # Run the FlipMe script.
         Start-Process Powershell -Wait "-ExecutionPolicy Bypass -File $flipme"
