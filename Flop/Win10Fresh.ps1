@@ -1,5 +1,5 @@
 # Created By Anthony
-# Win10Fresh v0.10.5
+# Win10Fresh v0.10.6
 # Run PowerShell as Admin.
 if (!([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator"))
 {
@@ -78,10 +78,10 @@ $TaskPass = 'C:\Users\admin\Desktop\TaskPasswordExpire.ps1'
 $TaskRTC = 'C:\Users\admin\Desktop\TaskRTC.ps1'
 $flipme = 'C:\Users\admin\Desktop\Software\FlipMe.ps1'
 $UsbPath = 'D:\PassExpire'
-$RTCPath = 'D:\RTC'
+$RTCPath = 'D:\RealTimeClock'
 $Destination = 'C:\Users\admin\Desktop'
 $PassExpirePath = 'C:\Users\admin\Desktop\PassExpire'
-$RealTimeClockPath = 'C:\Users\admin\Desktop\RTC'
+$RealTimeClockPath = 'C:\Users\admin\Desktop\RealTimeClock'
 $software = 'D:\Software'
 $softwareDestination = 'C:\Users\admin\Desktop\Software'
 $updates = 'D:\Updates'
@@ -95,7 +95,7 @@ while ($true)
     $studentAccount = Read-host "Enter Student Account Name"
 
     # Confirm before proceeding
-    $confirmation = Read-Host "Are you sure you want to create the account for $studentAccount? (Y/N)"
+    $confirmation = Read-Host "Are you sure you want to create the account for '$studentAccount'? (Y/N)"
 
     if ($confirmation -eq 'Y' -or $confirmation -eq 'y')
     {
@@ -237,8 +237,14 @@ $exeFiles = Get-ChildItem -Path $exeDir -Filter *.exe
 # Iterate through each executable file
 foreach ($exeFile in $exeFiles) {
     Write-Host "Installing $($exeFile.Name)" -ForegroundColor Green
-    # Start the executable with the /s switch for silent installation
-    Start-Process -FilePath $exeFile.FullName -ArgumentList "/s" -NoNewWindow -Wait
+    # Check if the executable file is the specific one that requires the /q switch
+    if ($exeFile.Name -eq "windows-kb890830-x64-v5.118_1898d7783231ed14970911d2c4dd815be13e2a4a.exe") {
+        # Start the executable with the /q switch for silent installation
+        Start-Process -FilePath $exeFile.FullName -ArgumentList "/q" -NoNewWindow -Wait
+    } else {
+        # Start the executable with the /s switch for silent installation
+        Start-Process -FilePath $exeFile.FullName -ArgumentList "/s" -NoNewWindow -Wait
+    }
 }
 
 
@@ -276,15 +282,15 @@ else
     (Get-ChildItem $Destination -Recurse).FullName
 }
 Start-Sleep -Seconds 5
-Move-Item -Path 'C:\Users\admin\Desktop\RTC\RTC.ps1' -Destination $Destination 
-Move-Item -Path 'C:\Users\admin\Desktop\RTC\RTC.xml' -Destination $Destination
-Move-Item -Path 'C:\Users\admin\Desktop\RTC\TaskRTC.ps1' -Destination $Destination 
-Remove-Item -Path $RTCPath -Recurse
+Move-Item -Path 'C:\Users\admin\Desktop\RealTimeClock\RTC.ps1' -Destination $Destination 
+Move-Item -Path 'C:\Users\admin\Desktop\RealTimeClock\RTC.xml' -Destination $Destination
+Move-Item -Path 'C:\Users\admin\Desktop\RealTimeClock\TaskRTC.ps1' -Destination $Destination 
+Remove-Item -Path $RealTimeClockPath -Recurse
 
 Start-Process Powershell -Wait "-ExecutionPolicy Bypass -File $TaskRTC"
 Write-Host "TaskRTC has been created" -ForegroundColor Green
 Start-Sleep -Seconds 4
-Remove-Item -Path 'C:\Users\admin\Desktop\RTC\RTC.xml' -Force
+Remove-Item -Path 'C:\Users\admin\Desktop\RTC.xml' -Force
 Write-Host "TaskRTC.xml has been removed"  -ForegroundColor Green
 
 # Flip Me
