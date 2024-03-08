@@ -15,5 +15,7 @@ A curated collection of PowerShell scripts designed to automate and streamline v
 - **CopyFilePath**: Enhances user experience by adding a context menu option to copy file paths to the clipboard.
 - **LoginEncodeDecode**: A proof of concept (POC) demonstrating text encoding and decoding for unconventional password use. (Not recommended for production environments.)
 - **Get History**: A work in progress (WIP) script that extracts browsing history from Chrome's SQLite database and exports it to CSV format.
+  -  Compare Script: Extracts and counts domain frequencies from URLs in CSV files, exporting aggregated domains and their occurrence counts to CSV outputs.
+  -  Keywords Script: Counts and analyzes the frequency of search queries from CSV files in a specified directory, exporting a ranked list of queries by occurrence to a CSV file.
 
 Each script is designed with efficiency and practicality in mind, aiming to enhance the workflow of IT professionals and system administrators.
