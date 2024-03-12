@@ -1,7 +1,8 @@
 # Created By Anthony
 # Get History v0.3
 # Ensure running as Administrator
-if (-not ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
+if (-not ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator))
+{
     Start-Process powershell.exe "-NoProfile -ExecutionPolicy Bypass -File `"$PSCommandPath`"" -Verb RunAs
     exit
 }
@@ -24,13 +25,14 @@ $browsers = @(
     @{Name = "Edge"; HistoryPath = "C:\Users\$username\AppData\Local\Microsoft\Edge\User Data\Default\History" }
 )
 
+
 foreach ($browser in $browsers) 
 {
     $tempDirectory = "D:\BrowserHistory\" + $browser.Name
     $tempDirectoryRaw = $tempDirectory + "\raw"
     $databaseFilePath = $tempDirectoryRaw + "\${username}_History"
-    $outputFilePath = $tempDirectory + "\input\${username}_${browser.Name}_URL.csv"
-    $outputFileKeywordsPath = $tempDirectory + "\keywords\${username}_${browser.Name}_keyword_search_terms.csv"
+    $outputFilePath = $tempDirectory + "\input\${username}_$($Browser.Name)_URL.csv"
+    $outputFileKeywordsPath = $tempDirectory + "\keywords\${username}_$($Browser.Name)_keyword_search_terms.csv"
 
     # Ensure the necessary directories exist
     if (-not (Test-Path -Path $tempDirectory))
