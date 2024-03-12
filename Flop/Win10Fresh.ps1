@@ -1,5 +1,5 @@
 # Created By Anthony
-# Win10Fresh v0.10.6
+# Win10Fresh v0.10.7
 # Run PowerShell as Admin.
 if (!([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator"))
 {
@@ -191,42 +191,43 @@ foreach ($updatecab in $updatecabs)
 
 Write-Host "All updatecabs installed" -ForegroundColor Green
 
-# Function to install driver from INF file
-Function Install-Driver
-{
-    param (
-        [string]$infFile
-    )
-    pnputil /add-driver $infFile /install
-}
+## Needs further testing..
+# # Function to install driver from INF file
+# Function Install-Driver
+# {
+#     param (
+#         [string]$infFile
+#     )
+#     pnputil /add-driver $infFile /install
+# }
 
-# Define the root directory containing the driver folders
-$rootDir = "D:\Updates\Manual Driver"
+# # Define the root directory containing the driver folders
+# $rootDir = "D:\Updates\Manual Driver"
 
-# Get all subdirectories under the root directory
-$directories = Get-ChildItem -Path $rootDir -Directory
+# # Get all subdirectories under the root directory
+# $directories = Get-ChildItem -Path $rootDir -Directory
 
-# Iterate through each subdirectory
-foreach ($dir in $directories)
-{
-    # Get the INF file in the current subdirectory
-    $infFile = Get-ChildItem -Path $dir.FullName -Recurse -Filter *.inf
+# # Iterate through each subdirectory
+# foreach ($dir in $directories)
+# {
+#     # Get the INF file in the current subdirectory
+#     $infFile = Get-ChildItem -Path $dir.FullName -Recurse -Filter *.inf
     
-    # If an INF file is found, install the driver
-    if ($infFile)
-    {
-        # In case there are multiple INF files, this loop will handle them
-        foreach ($file in $infFile)
-        {
-            Write-Host "Installing driver from $($file.FullName)" -ForegroundColor Green
-            Install-Driver -infFile $file.FullName
-        }
-    }
-    else
-    {
-        Write-Host "No INF file found in $($dir.FullName)" -ForegroundColor Red
-    }
-}
+#     # If an INF file is found, install the driver
+#     if ($infFile)
+#     {
+#         # In case there are multiple INF files, this loop will handle them
+#         foreach ($file in $infFile)
+#         {
+#             Write-Host "Installing driver from $($file.FullName)" -ForegroundColor Green
+#             Install-Driver -infFile $file.FullName
+#         }
+#     }
+#     else
+#     {
+#         Write-Host "No INF file found in $($dir.FullName)" -ForegroundColor Red
+#     }
+# }
 
 # Define the directory containing the executable files
 $exeDir = "D:\Updates\MISC"

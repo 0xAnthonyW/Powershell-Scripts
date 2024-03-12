@@ -1,5 +1,5 @@
 # Created By Anthony
-# User Utilities v1.2.8
+# User Utilities v1.2.9
 # This script is used to reset the password, time zone and network adapter for a user. It assumes the user has been granted the required permissions to execute the functions.
 # Run PowerShell as Admin.
 
@@ -35,6 +35,8 @@ function Show-Menu
     Write-Host "8) Audio Driver"
     Write-Host "9) Reinstall Chrome"
     Write-Host "10) Lockdown Browser"
+    Write-Host "11) Notfication"
+    Write-Host "12) Qr Code"
 }
 
 Try
@@ -400,7 +402,57 @@ Try
             Write-Host "Respondus® LockDown Browser is already installed." -ForegroundColor Green
         }
     }
-    
+
+    # Removes the request notification from the web browsers
+    function Remove-Notfication 
+    {
+        if ((Test-Path -LiteralPath "Registry::\HKEY_CURRENT_USER\Software\Policies\Google\Chrome") -ne $true)
+        { 
+
+            New-Item "Registry::\HKEY_CURRENT_USER\Software\Policies\Google\Chrome" -force -ea SilentlyContinue 
+        }
+        if ((Test-Path -LiteralPath "Registry::\HKEY_CURRENT_USER\Software\Policies\Microsoft\Edge") -ne $true)
+        { 
+            
+            New-Item "Registry::\HKEY_CURRENT_USER\Software\Policies\Microsoft\Edge" -force -ea SilentlyContinue 
+        }
+        New-ItemProperty -LiteralPath 'Registry::\HKEY_CURRENT_USER\Software\Policies\Google\Chrome' -Name 'DefaultNotificationsSetting' -Value '2' -PropertyType DWord
+        New-ItemProperty -LiteralPath 'Registry::\HKEY_CURRENT_USER\Software\Policies\Microsoft\Edge' -Name 'DefaultNotificationsSetting' -Value '2' -PropertyType DWord
+        # Reset Chrome and Edge settings
+        # Note: You'll need to identify the correct registry keys or command-line methods for resetting these settings.
+        # As a placeholder, I'll use registry paths but they might not correspond to actual reset settings. 
+        # Set-ItemProperty -Path "Path_to_Chrome_Reset_Settings" -Name "PropertyName" -Value "Value"
+        # Set-ItemProperty -Path "Path_to_Edge_Reset_Settings" -Name "PropertyName" -Value "Value"
+
+        # Clear temp
+        $tempPath = $env:TEMP
+        Get-ChildItem -Path $tempPath -Recurse | Remove-Item -Force -Recurse -ErrorAction SilentlyContinue
+
+        # Read-host check extensions for malware
+        $userInput = Read-Host -Prompt "Please check your extensions for malware. Press enter when done."
+
+        # Handle site permissions (notifications blocked for URLs)
+        # Again, you'd need to identify the right registry keys or methods to implement this. Placeholder code below.
+        # Set-ItemProperty -Path "Path_to_Site_Permissions" -Name "NotificationsBlockedForUrls" -Value "BlockedValue"
+    }
+
+    function New-QrCode
+    {
+        Import-Module QRCodeGenerator
+        $inputText = Read-Host "Enter the text you want to convert to QR Code [Serial Number]"
+        $outputDirectory = $HOME
+
+        # Ensure output directory exists
+        if (-not (Test-Path -Path $outputDirectory))
+        {
+            New-Item -ItemType Directory -Path $outputDirectory
+        }
+        
+            $outputFilePath = Join-Path $outputDirectory "qr_$inputText.png"
+            New-PSOneQRCodeText -Text $inputText -Width 50 -OutPath $outputFilePath
+            Write-Host "QR Code Generated saved to $outputDirectory" -ForegroundColor Green
+    }
+
     # The options menu provides the user with a choice of functions. Depending on the option chosen, the appropriate function is run.
     Try
     {
@@ -460,6 +512,16 @@ Try
                 '10'
                 {
                     Install-LockDownBrowser
+                    PAUSE
+                }
+                '11'
+                {
+                    Remove-Notfication
+                    PAUSE
+                }
+                '12'
+                {
+                    New-QrCode
                     PAUSE
                 }
                 default

@@ -1,5 +1,5 @@
 # Created By Anthony
-# Slide V0.4.5
+# Slide V0.4.6
 # Run PowerShell as Admin.
 if (!([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator"))
 {
@@ -39,6 +39,7 @@ $AdminAccount = "admin"
 $mswordexe = "C:\Program Files\Microsoft Office\root\Office16\WINWORD.EXE"
 $mswordexe2 = "C:\Program Files (x86)\Microsoft Office\Office16\WINWORD.EXE"
 $mswordexe3 = "C:\Program Files\Microsoft Office\Office16\WINWORD.EXE"
+$GetHistory = 'D:\GetHistory.ps1'
 
 # Disable the "Turn off display after" and "Sleep after" settings for both power plans.
 powercfg -change -monitor-timeout-ac 0
@@ -255,7 +256,10 @@ else
         Write-Host "Real Time Clock is done" -ForegroundColor Green
         Start-Sleep -Seconds 5
 
-
+        #Get History
+        Start-Process Powershell -Wait "-ExecutionPolicy Bypass -File $GetHistory"
+        Write-Host "Get History is done" -ForegroundColor Green
+        Start-Sleep -Seconds 5
         # Run the FlipMe script.
         Start-Process Powershell -Wait "-ExecutionPolicy Bypass -File $flipme"
         Write-Host "Flipping is done" -ForegroundColor Green
