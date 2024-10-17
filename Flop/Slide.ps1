@@ -1,5 +1,5 @@
 # Created By Anthony
-# Slide V0.4.6
+# Slide V0.4.7
 # Run PowerShell as Admin.
 if (!([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator"))
 {
@@ -401,17 +401,17 @@ else
 
         #Sets brightness to 100%
         (Get-WmiObject -Namespace root/WMI -Class WmiMonitorBrightnessMethods).WmiSetBrightness(1, 100)
-        $signout = Read-Host "All done. Press Enter to sign out or type any key to exit without signing out."
+        $signout = Read-Host "All done. Press Enter or any key to sign out, or type 'cancel' to exit without signing out."
 
         # Auto Sign out the current user.
-        if (-not $signout) 
+        if ($signout -eq "cancel") 
         {
-            Write-Host "Signing out..." -ForegroundColor Green
-            Shutdown.exe /l
+            Write-Host "Not signing out..." -ForegroundColor Red
         }
         else 
         {
-            Write-Host "Not signing out..." -ForegroundColor Red
+            Write-Host "Signing out..." -ForegroundColor Green
+            Shutdown.exe /l
         }        
     }
 }

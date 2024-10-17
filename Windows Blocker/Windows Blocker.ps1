@@ -1,5 +1,6 @@
-# Created By Anthony 
-# Windows Blocker v1.3
+# Created By Anthony
+# Windows Blocker v1.4
+# Purpose is to block the Upgrade to Windows 11 While maintaining security patches, driver updates. (Use only on the latest feature update of Windows 10)
 # Make sure to check https://learn.microsoft.com/en-us/windows/release-health/release-information or https://learn.microsoft.com/en-us/lifecycle/products/windows-10-home-and-pro for the Windows Version End Of Service Date
 # Run PowerShell as Admin.
 if (!([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")) 
@@ -25,7 +26,7 @@ New-Item -Path "HKLM:\SOFTWARE\Microsoft" -Name PCHC -Force
 # Prompt the user for the desired value of the TargetReleaseVersionInfo key
 #$productVersion = Read-Host "Enter the desired ProductVersion (Example: *Windows 10* *Windows 11* *Windows 12*)"
 
-PAUSE
+#PAUSE
 
 #Set the value of the TargetReleaseVersionInfo key by automatically getting the windows version
 #Set-ItemProperty -Path "HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate" -Name "TargetReleaseVersionInfo" -Value (Get-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion" -Name "DisplayVersion").DisplayVersion
