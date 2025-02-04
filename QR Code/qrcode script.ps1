@@ -1,6 +1,5 @@
-# Check for Administrator privileges
-if (!([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator"))
-{
+# Check for Administrator privileges (remove if unnecessary)
+if (!([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")) {
     Start-Process powershell.exe "-NoProfile -ExecutionPolicy Bypass -File `"$PSCommandPath`"" -Verb RunAs
     exit
 }
@@ -8,38 +7,28 @@ if (!([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]:
 # Import the QRCodeGenerator module
 Import-Module QRCodeGenerator
 
-# Define input and output paths
-$inputFilePath = 'C:\Users\rootusr\Downloads\work\input.txt'
-$outputDirectory = 'C:\Users\rootusr\Downloads\work\output'
+# Define paths
+$inputFilePath = 'C:\Users\admin\Downloads\qrcode\qrcode\Input.txt'
+$outputDirectory = 'C:\Users\admin\Downloads\qrcode\qrcode\output'
 
-# Ensure output directory exists
+# Create output directory if needed
 if (-not (Test-Path -Path $outputDirectory)) {
     New-Item -ItemType Directory -Path $outputDirectory | Out-Null
 }
 
-# Read each line from the input file
-$textLines = Get-Content $inputFilePath
-
-# Loop through each line and generate QR code
-foreach ($line in $textLines) {
-    # Split on colon to separate STU portion and the code portion
-    $parts = $line -split ':'
+# Process each line
+Get-Content $inputFilePath | ForEach-Object {
+    $serialPart, $stuCode = $_ -split ':'
     
-    # $parts[0] should look like "STU0001" - extract numeric portion
-    # Assuming it always starts with "STU"
-    $stu = $parts[0]
-    $serialNumber = $stu.Substring(3)  # e.g. "STU0001" -> "0001"
-
-    # $parts[1] is the code, e.g. "2TK0854HJF"
-    $code = $parts[1]
-
-    # Construct the filename => qr_0001_2TK0854HJF.png
-    $fileName = "qr_{0}_{1}.png" -f $serialNumber, $code
-    $outputFilePath = Join-Path $outputDirectory $fileName
-
-    # Generate the QR code
-    New-PSOneQRCodeText -Text $line -Width 50 -OutPath $outputFilePath
+    # Extract numeric portion after "2TK" prefix
+    $serialNumber = $serialPart.Substring(3)  # Removes first 3 characters ("2TK")
+    
+    # Build filename
+    $fileName = "qr_{0}_{1}.png" -f $serialNumber, $stuCode
+    $outputPath = Join-Path $outputDirectory $fileName
+    
+    # Generate QR code with ONLY the serial part (before colon)
+    New-PSOneQRCodeText -Text $serialPart -Width 200 -OutPath $outputPath
 }
 
-# Pause the script to view any output or errors
 Pause
